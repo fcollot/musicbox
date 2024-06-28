@@ -4,6 +4,7 @@
 #include <musicbox.h>
 
 #include <QApplication>
+#include <QDebug>
 #include <QMainWindow>
 
 int main(int argc, char** argv)

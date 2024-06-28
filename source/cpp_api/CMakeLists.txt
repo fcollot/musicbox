@@ -38,6 +38,8 @@ add_library(mbox_cpp_api SHARED
     ${sources}
     )
 
+add_dependencies(mbox_cpp_api mbox_python_packages)
+
 ################################################################################
 # Compile definitions
 ################################################################################
@@ -75,9 +77,15 @@ target_include_directories(mbox_cpp_api
 
 set(qt_libraries)
 
+if(MBOX_USE_QT5)
+    set(version_subdir 5)
+else()
+    set(version_subdir A)
+endif()
+
 foreach(component ${qt_components})
     if(APPLE)
-        set(library "Qt${component}.framework/Versions/A/Qt${component}")
+        set(library "Qt${component}.framework/Versions/${version_subdir}/Qt${component}")
     else()
         set(library "Qt${component}${CMAKE_SHARED_LIBRARY_SUFFIX}")
     endif()

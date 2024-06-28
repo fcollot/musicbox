@@ -3,9 +3,15 @@
 
 
 import sys
+
 from PySide@MBOX_PYSIDE_VERSION_MAJOR@.QtCore import Qt
-from PySide@MBOX_PYSIDE_VERSION_MAJOR@.QtGui import QAction
 from PySide@MBOX_PYSIDE_VERSION_MAJOR@.QtWidgets import QDockWidget, QFileDialog, QLabel, QMainWindow, QMenuBar, QWidget
+
+try:
+    from PySide@MBOX_PYSIDE_VERSION_MAJOR@.QtGui import QAction
+except ImportError:
+    from PySide@MBOX_PYSIDE_VERSION_MAJOR@.QtWidgets import QAction
+
 from .console import Console
 from .image import Image
 from .itk import init as init_itk
