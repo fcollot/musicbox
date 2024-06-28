@@ -5,8 +5,7 @@
 # Subdirectories
 ################################################################################
 
-add_subdirectory(cpp_api)
-add_subdirectory(python_api)
+add_subdirectory(library)
 
 if(MBOX_STANDALONE)
     add_subdirectory(executable)

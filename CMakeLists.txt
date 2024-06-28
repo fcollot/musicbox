@@ -62,25 +62,30 @@ endif()
 
 set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}")
 
-set(MBOX_APPLICATION_NAME MusicBox CACHE STRING "The name of the standalone or embedding application")
-
 if(APPLE)
     option(MBOX_MACOS_BUNDLE "Build as a bundle" ON)
 endif()
 
 option(MBOX_STANDALONE "Build standalone application" ON)
 
+set(MBOX_APPLICATION_NAME "NoName" CACHE STRING "The name of the embedding application")
+
+if(APPLE AND MBOX_MACOS_BUNDLE)
+    if(MBOX_STANDALONE)
+        set(MBOX_MACOS_BUNDLE_NAME "MusicBox")
+    else()
+        set(MBOX_MACOS_BUNDLE_NAME "${MBOX_APPLICATION_NAME}")
+endif()
+
 option(MBOX_USE_QT5 "Build with Qt5 instead of Qt6" OFF)
 
 if(MBOX_USE_QT5)
-    set(MBOX_QT_VERSION_MAJOR 5)
-    set(MBOX_QT_VERSION_MINOR 15)
-    set(MBOX_PYSIDE_VERSION_MAJOR 2)
+    set(qt_package Qt5)
 else()
-    set(MBOX_QT_VERSION_MAJOR 6)
-    set(MBOX_QT_VERSION_MINOR 7)
-    set(MBOX_PYSIDE_VERSION_MAJOR 6)
+    set(qt_package Qt6)
 endif()
+
+find_package(${qt_package} REQUIRED)
 
 ################################################################################
 # Paths
@@ -91,9 +96,14 @@ set(MBOX_ROOT "${MBOX_ROOT_BASE}/$<CONFIG>")
 
 if(UNIX)
     if(APPLE AND MBOX_MACOS_BUNDLE)
-        set(contents_subdir "${MBOX_APPLICATION_NAME}.app/Contents")
-        set(runtime_subdir "${contents_subdir}/MacOS")
+        set(contents_subdir "${MBOX_MACOS_BUNDLE_NAME}.app/Contents")
         set(library_subdir "${contents_subdir}/Frameworks")
+
+        if(MBOX_STANDALONE)
+            set(runtime_subdir "${contents_subdir}/MacOS")
+        else()
+            set(runtime_subdir "bin")
+        endif()
     else()
         set(runtime_subdir "bin")
         set(library_subdir "lib")

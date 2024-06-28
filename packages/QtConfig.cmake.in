@@ -9,18 +9,18 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(pyncpp)
 
-set(Qt@MBOX_QT_VERSION_MAJOR@_DIR)
+set(Qt@QT_VERSION_MAJOR@_DIR)
 
 get_directory_property(_previous_targets IMPORTED_TARGETS)
 
-find_dependency(Qt@MBOX_QT_VERSION_MAJOR@ @MBOX_QT_VERSION_MAJOR@.@MBOX_QT_VERSION_MINOR@
-    COMPONENTS ${Qt@MBOX_QT_VERSION_MAJOR@_FIND_COMPONENTS}
+find_dependency(Qt@QT_VERSION_MAJOR@ @QT_VERSION_MAJOR@.@MQT_VERSION_MINOR@
+    COMPONENTS ${Qt@QT_VERSION_MAJOR@_FIND_COMPONENTS}
     )
 
-set(Qt@MBOX_QT_VERSION_MAJOR@_DIR)
-set(Qt@MBOX_QT_VERSION_MAJOR@_FOUND TRUE)
+set(Qt@QT_VERSION_MAJOR@_DIR)
+set(Qt@QT_VERSION_MAJOR@_FOUND TRUE)
 
-set(Qt@MBOX_QT_VERSION_MAJOR@_LIBRAY_DIRS)
+set(Qt@QT_VERSION_MAJOR@_LIBRAY_DIRS)
 
 get_directory_property(_imported_targets IMPORTED_TARGETS)
 
@@ -59,7 +59,7 @@ foreach(_target ${_imported_targets})
                 endif()
 
                 if(NOT _library_dir MATCHES "^.*/plugins(/.*)?$")
-                    list(APPEND Qt@MBOX_QT_VERSION_MAJOR@_LIBRARY_DIRS ${_library_dir})
+                    list(APPEND Qt@QT_VERSION_MAJOR@_LIBRARY_DIRS ${_library_dir})
                 endif()
 
                 set_target_properties(${_target} PROPERTIES
@@ -77,10 +77,10 @@ foreach(_target ${_imported_targets})
     endif()
 endforeach()
 
-list(REMOVE_DUPLICATES Qt@MBOX_QT_VERSION_MAJOR@_LIBRARY_DIRS)
+list(REMOVE_DUPLICATES Qt@QT_VERSION_MAJOR@_LIBRARY_DIRS)
 
-foreach(_component ${Qt@MBOX_QT_VERSION_MAJOR@_FIND_COMPONENTS})
-    set(Qt@MBOX_QT_VERSION_MAJOR@_${_component}_FOUND TRUE)
+foreach(_component ${Qt@QT_VERSION_MAJOR@_FIND_COMPONENTS})
+    set(Qt@QT_VERSION_MAJOR@_${_component}_FOUND TRUE)
 endforeach()
 
-check_required_components(Qt@MBOX_QT_VERSION_MAJOR@)
+check_required_components(Qt@QT_VERSION_MAJOR@)
