@@ -75,17 +75,26 @@ if(APPLE AND MBOX_MACOS_BUNDLE)
         set(MBOX_MACOS_BUNDLE_NAME "MusicBox")
     else()
         set(MBOX_MACOS_BUNDLE_NAME "${MBOX_APPLICATION_NAME}")
+    endif()
 endif()
 
 option(MBOX_USE_QT5 "Build with Qt5 instead of Qt6" OFF)
 
 if(MBOX_USE_QT5)
-    set(qt_package Qt5)
+    set(MBOX_QT_PACKAGE "Qt5")
+    set(MBOX_PYSIDE_PACKAGE "PySide2")
+    set(MBOX_SHIBOKEN_PACKAGE "shiboken2")
 else()
-    set(qt_package Qt6)
+    set(MBOX_QT_PACKAGE "Qt6")
+    set(MBOX_PYSIDE_PACKAGE "PySide6")
+    set(MBOX_SHIBOKEN_PACKAGE "shiboken6")
 endif()
 
-find_package(${qt_package} REQUIRED)
+################################################################################
+# Dependencies
+################################################################################
+
+find_package(${MBOX_QT_PACKAGE} REQUIRED COMPONENTS Core)
 
 ################################################################################
 # Paths
