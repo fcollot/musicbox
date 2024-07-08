@@ -62,20 +62,14 @@ endif()
 
 set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}")
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+option(MBOX_BUILD_EMBEDDABLE_PYTHON "" OFF)
+
+option(MBOX_STANDALONE "Build standalone" OFF)
+
 if(APPLE)
-    option(MBOX_MACOS_BUNDLE "Build as a bundle" ON)
-endif()
-
-option(MBOX_STANDALONE "Build standalone application" ON)
-
-set(MBOX_APPLICATION_NAME "NoName" CACHE STRING "The name of the embedding application")
-
-if(APPLE AND MBOX_MACOS_BUNDLE)
-    if(MBOX_STANDALONE)
-        set(MBOX_MACOS_BUNDLE_NAME "MusicBox")
-    else()
-        set(MBOX_MACOS_BUNDLE_NAME "${MBOX_APPLICATION_NAME}")
-    endif()
+    option(MBOX_MACOS_BUNDLE "Build standalone as a bundle" OFF)
 endif()
 
 option(MBOX_USE_QT5 "Build with Qt5 instead of Qt6" OFF)
@@ -90,6 +84,8 @@ else()
     set(MBOX_SHIBOKEN_PACKAGE "shiboken6")
 endif()
 
+set(MBOX_PLUGINS TRUE CACHE BOOL "Download and install the official MusicBox plugins")
+
 ################################################################################
 # Dependencies
 ################################################################################
@@ -102,46 +98,44 @@ find_package(${MBOX_QT_PACKAGE} REQUIRED COMPONENTS Core)
 
 set(MBOX_ROOT_BASE "${CMAKE_CURRENT_BINARY_DIR}")
 set(MBOX_ROOT "${MBOX_ROOT_BASE}/$<CONFIG>")
+set(MBOX_PACKAGE_ROOT "${MBOX_ROOT}/packages")
 
 if(UNIX)
     if(APPLE AND MBOX_MACOS_BUNDLE)
-        set(contents_subdir "${MBOX_MACOS_BUNDLE_NAME}.app/Contents")
-        set(library_subdir "${contents_subdir}/Frameworks")
-
-        if(MBOX_STANDALONE)
-            set(runtime_subdir "${contents_subdir}/MacOS")
-        else()
-            set(runtime_subdir "bin")
-        endif()
+        set(contents_subdir "MusicBox.app/Contents")
+        set(standalone_library_subdir "${contents_subdir}/Frameworks")
+        set(standalone_runtime_subdir "${contents_subdir}/MacOS")
     else()
-        set(runtime_subdir "bin")
-        set(library_subdir "lib")
+        set(standalone_runtime_subdir "bin")
+        set(standalone_library_subdir "lib")
     endif()
 
-    set(archive_subdir "lib")
-    set(share_subdir "share/cmake/mbox")
+    set(package_runtime_subdir "bin")
+    set(package_library_subdir "lib")
+    set(package_archive_subdir "lib")
+    set(package_share_subdir "share/cmake/mbox")
 else()
-    set(runtime_subdir "bin")
-    set(library_subdir "bin")
-    set(archive_subdir "libs")
-    set(share_subdir "cmake")
+    set(standalone_runtime_subdir "bin")
+    set(standalone_library_subdir "bin")
+    set(package_runtime_subdir "bin")
+    set(package_library_subdir "bin")
+    set(package_archive_subdir "libs")
+    set(package_share_subdir "cmake")
 endif()
 
-set(MBOX_RUNTIME_SUBDIR "${runtime_subdir}" CACHE PATH "")
-set(MBOX_LIBRARY_SUBDIR "${library_subdir}" CACHE PATH "")
-set(MBOX_ARCHIVE_SUBDIR "${archive_subdir}" CACHE PATH "")
-set(MBOX_SHARE_SUBDIR "${share_subdir}" CACHE PATH "")
-set(MBOX_INCLUDE_SUBDIR "include" CACHE PATH "")
-set(MBOX_UTILS_SUBDIR "bin" CACHE PATH "")
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${MBOX_ROOT}/${MBOX_RUNTIME_SUBDIR}")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${MBOX_ROOT}/${MBOX_LIBRARY_SUBDIR}")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${MBOX_ROOT}/${MBOX_ARCHIVE_SUBDIR}")
+set(MBOX_STANDALONE_RUNTIME_SUBDIR "${standalone_runtime_subdir}")
+set(MBOX_STANDALONE_LIBRARY_SUBDIR "${standalone_library_subdir}")
+set(MBOX_PACKAGE_RUNTIME_SUBDIR "${package_runtime_subdir}")
+set(MBOX_PACKAGE_LIBRARY_SUBDIR "${package_library_subdir}")
+set(MBOX_PACKAGE_ARCHIVE_SUBDIR "${package_archive_subdir}")
+set(MBOX_PACKAGE_SHARE_SUBDIR "${package_share_subdir}")
+set(MBOX_PACKAGE_INCLUDE_SUBDIR "include")
+set(MBOX_UTILS_SUBDIR "bin")
 
 ################################################################################
 # Subdirectories
 ################################################################################
 
 add_subdirectory(pyncpp)
-add_subdirectory(packages)
 add_subdirectory(source)
+add_subdirectory(config)

@@ -5,10 +5,11 @@
 # Settings
 ################################################################################
 
-if(APPLE)
-    set(PYNCPP_MACOS_BUNDLE ${MBOX_MACOS_BUNDLE} CACHE BOOL "")
-    set(PYNCPP_MACOS_BUNDLE_NAME "${MBOX_APPLICATION_NAME}" CACHE STRING "")
-endif()
+set(PYNCPP_BUILD_EMBEDDABLE_PYTHON ${MBOX_BUILD_EMBEDDABLE_PYTHON} CACHE BOOL "")
+
+set(PYNCPP_RUNTIME_SUBDIR "packages/musicbox/${MBOX_PACKAGE_RUNTIME_SUBDIR}" CACHE PATH "")
+set(PYNCPP_LIBRARY_SUBDIR "packages/musicbox/${MBOX_PACKAGE_LIBRARY_SUBDIR}" CACHE PATH "")
+set(PYNCPP_ARCHIVE_SUBDIR "packages/musicbox/${MBOX_PACKAGE_ARCHIVE_SUBDIR}" CACHE PATH "")
 
 ################################################################################
 # Fetch content
@@ -17,7 +18,7 @@ endif()
 FetchContent_Declare(
     pyncpp
     GIT_REPOSITORY "https://github.com/fcollot/pyncpp.git"
-    GIT_TAG integration
+    GIT_TAG integration2
     GIT_SHALLOW False
     GIT_PROGRESS True
     )

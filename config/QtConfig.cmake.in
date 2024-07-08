@@ -1,0 +1,88 @@
+# Copyright (c) 2024 IHU Liryc, Université de Bordeaux, Inria.
+# License: BSD-3-Clause
+
+cmake_policy(SET CMP0057 NEW) # IN_LIST operator
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(pyncpp)
+
+get_directory_property(_previous_targets IMPORTED_TARGETS)
+
+set(@MBOX_QT_PACKAGE@_DIR)
+
+find_dependency(@MBOX_QT_PACKAGE@
+    COMPONENTS ${@MBOX_QT_PACKAGE@_FIND_COMPONENTS}
+    NO_DEFAULT_PATH
+    PATHS "@QT_DIR@"
+    )
+
+set(@MBOX_QT_PACKAGE@_DIR "@QT_DIR@")
+set(@MBOX_QT_PACKAGE@_FOUND TRUE)
+
+set(@MBOX_QT_PACKAGE@_LIBRAY_DIRS)
+
+get_directory_property(_imported_targets IMPORTED_TARGETS)
+
+foreach(_target ${_imported_targets})
+    if(NOT _target IN_LIST _previous_targets)
+        get_target_property(_configs ${_target} IMPORTED_CONFIGURATIONS)
+        set(_location_properties)
+        get_target_property(_location ${_target} IMPORTED_LOCATION)
+
+        if(_location)
+            set(_location_properties IMPORTED_LOCATION)
+        endif()
+
+        foreach(_config ${_configs})
+            string(TOUPPER ${_config} _CONFIG)
+            set(_location_property IMPORTED_LOCATION_${_CONFIG})
+            get_target_property(_location ${_target} ${_location_property})
+            if(_location)
+                list(APPEND _location_properties ${_location_property})
+                break()
+            endif()
+        endforeach()
+
+        foreach(_location_property ${_location_properties})
+            get_target_property(_location ${_target} ${_location_property})
+            cmake_path(GET _location FILENAME library_name)
+            file(GLOB_RECURSE _python_library "${pyncpp_PYTHON_SITE_DIR}/@MBOX_PYSIDE_PACKAGE@/Qt/lib/${library_name}")
+
+            if(_python_library)
+                cmake_path(GET _python_library PARENT_PATH _library_dir)
+
+                if(APPLE)
+                    if(_library_dir MATCHES "^(.*)/.*\.framework(/.*)?$")
+                        set(_library_dir "${CMAKE_MATCH_1}")
+                    endif()
+                endif()
+
+                if(NOT _library_dir MATCHES "^.*/plugins(/.*)?$")
+                    list(APPEND @MBOX_QT_PACKAGE@_LIBRARY_DIRS ${_library_dir})
+                endif()
+
+                set_target_properties(${_target} PROPERTIES
+                    IMPORTED_LOCATION "${_python_library}"
+                    )
+                if(_configs)
+                    foreach(_config ${_configs})
+                        set_target_properties(${_target} PROPERTIES
+                            IMPORTED_LOCATION_${_config} "${_python_library}"
+                            )
+                    endforeach()
+                endif()
+            endif()
+        endforeach()
+    endif()
+endforeach()
+
+list(REMOVE_DUPLICATES @MBOX_QT_PACKAGE@_LIBRARY_DIRS)
+
+foreach(_component ${@MBOX_QT_PACKAGE@_FIND_COMPONENTS})
+    set(@MBOX_QT_PACKAGE@_${_component}_FOUND TRUE)
+endforeach()
+
+check_required_components(@MBOX_QT_PACKAGE@)
