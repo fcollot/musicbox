@@ -32,8 +32,7 @@ find_package(${MBOX_QT_PACKAGE} REQUIRED COMPONENTS ${qt_components})
 # Subdirectories
 ################################################################################
 
-add_subdirectory(core)
-add_subdirectory(plugins)
+add_subdirectory(package)
 
 if(MBOX_STANDALONE)
     add_subdirectory(standalone)
@@ -42,11 +41,10 @@ endif()
 add_custom_target(mbox_pip_install ALL
     COMMAND pyncpp_executable -m pip install
     "${MBOX_PACKAGE_ROOT}/musicbox"
-    "${MBOX_PACKAGE_ROOT}/musicbox_plugins"
     VERBATIM
     )
 
-add_dependencies(mbox_pip_install mbox_python_package mbox_python_plugins)
+add_dependencies(mbox_pip_install mbox_python_package)
 
 ################################################################################
 # Config module
