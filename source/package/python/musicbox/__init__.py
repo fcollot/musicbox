@@ -2,4 +2,11 @@
 # License: BSD-3-Clause
 
 
+from musicbox import data
+from musicbox.tui import *
+
 from . import config
+
+
+def init():
+    data.init()

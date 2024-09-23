@@ -2,22 +2,19 @@
 # License: BSD-3-Clause
 
 
+import code
 import sys
-import traceback
+from threading import Thread
 
 from . import config
 
 if config.pyside_version() == 2:
-    from PySide2.QtCore import Slot
     from PySide2.QtWidgets import QApplication
 else:
-    from PySide6.QtCore import Slot
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QWidget
 
-from musicbox import api as musicbox_api
+import musicbox
 from musicbox.core import Messenger, PluginPreloader
-
-from .main_window import MainWindow
 
 
 class Application(QApplication):
@@ -30,20 +27,16 @@ class Application(QApplication):
     def __init__(self, argv=None):
         super().__init__(argv=argv)
         self.setApplicationName("MusicBox")
+        self.setQuitOnLastWindowClosed(False)
         self._is_running = False
 
-    def run(self, *, splash=False):
+    def run(self):
         if self._is_running:
             raise RuntimeError("MusicBox is already running.")
         self._init_messenger()
-        splash = self._create_splash() if splash else None
         plugin_preloader = self._preload_plugins_in_background_thread()
-        self._init_main_window()
-        self._main_window.set_plugin_preloader(plugin_preloader)
-        sys.modules['__main__'].__dict__['mbox'] = musicbox_api#{symbol: getattr(musicbox_api, symbol) for symbol in dir(musicbox_api) if not symbol.startswith('_')}
-
-        if splash is not None:
-            splash.finish(self._main_window)
+       # sys.modules['__main__'].__dict__['mbox'] = musicbox#{symbol: getattr(musicbox_api, symbol) for symbol in dir(musicbox_api) if not symbol.startswith('_')}
+        self._run_command_line()
 
         if config.pyside_version() == 2:
             return self._exec()
@@ -57,41 +50,16 @@ class Application(QApplication):
         messenger.internal_warning.connect(print)
         messenger.internal_alert.connect(print)
 
-    def _create_splash(self):
-        if config.pyside_version() == 2:
-            from PySide2.QtCore import Signal, Qt
-            from Pyside2.QtGui import QPixmap
-            from PySide2.QtWidgets import QLabel, QSplashScreen, QVBoxLayout
-        else:
-            from PySide6.QtCore import Signal, Qt
-            from PySide6.QtGui import QPixmap
-            from PySide6.QtWidgets import QLabel, QSplashScreen, QVBoxLayout
-
-        pixmap = QPixmap('/Users/florent.collot/Downloads/logo.png')
-        splash = QSplashScreen(pixmap)
-        splash.setLayout(QVBoxLayout())
-        splash.layout().addWidget(QLabel("v1.0"), 0, Qt.AlignTop | Qt.AlignRight)
-        splash.showMessage("Loading...", Qt.AlignBottom | Qt.AlignRight)
-        splash.show()
-        self.processEvents()
-        return splash
-
     def _preload_plugins_in_background_thread(self):
         preloader = PluginPreloader.run_in_dedicated_thread(self.preloaded_plugins)
-        preloader.plugin_loaded.connect(self._plugin_loaded)
-        preloader.plugin_failed.connect(self._plugin_failed)
         return preloader
 
-    @Slot(str, str)
-    def _plugin_loaded(self, group, name):
-        self._messenger.internal_info(f'Loaded plugin \'{group}:{name}\'')
+    def _run_command_line(self):
+        def command_line():
+            try:
+                code.interact(local=vars(musicbox))
+            except SystemExit:
+                self.quit()
 
-    @Slot(str, str, Exception)
-    def _plugin_failed(self, group, name, exception):
-        self._messenger.alert_internal(f'Error while loading plugin \'{group}:{name}\'')
-        self._messenger.alert_internal(''.join(traceback.format_exception(exception)))
-
-    def _init_main_window(self):
-        self._main_window = MainWindow(messenger=self._messenger)
-        self._main_window.showMaximized()
-        self._main_window.show_welcome_page()
+        thread = Thread(target=command_line, name="Python command line")
+        thread.start()

@@ -2,4 +2,4 @@
 # License: BSD-3-Clause
 
 
-from musicbox.data import image
+import SimpleITK as sitk

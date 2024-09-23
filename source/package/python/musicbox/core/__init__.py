@@ -5,3 +5,4 @@
 from .messenger import Messenger
 from .plugins import PluginLoader, PluginPreloader
 from .settings import Settings
+from .singleton import Singleton

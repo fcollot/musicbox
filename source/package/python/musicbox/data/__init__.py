@@ -2,5 +2,12 @@
 # License: BSD-3-Clause
 
 
-from .image import image, NumpyImage, SITKImage, VTKImage
-from .scene import Scene, SceneNode
+from .data_manager import DataManager
+from .file_manager import FileManager
+from . import image
+from .project import Project
+#from .scene import Scene, SceneManager, SceneNode
+
+
+def init():
+    image.init()

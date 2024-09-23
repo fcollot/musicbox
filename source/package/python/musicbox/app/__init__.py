@@ -4,6 +4,8 @@
 
 import sys
 
+from musicbox import init
+
 from . import config
 from .application import Application
 
@@ -16,4 +18,5 @@ def run(**options):
         if not isinstance(app, Application):
             raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
 
+    init()
     return app.run(**options)

@@ -2,7 +2,8 @@
 # License: BSD-3-Clause
 
 
-import numpy
-import SimpleITK as sitk
+current = {}
 
 
+def current_project():
+    return current.get('project', None)

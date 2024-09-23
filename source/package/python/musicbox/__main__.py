@@ -5,4 +5,4 @@
 from .app import run
 
 
-run(splash=True)
+run()#splash=True)
