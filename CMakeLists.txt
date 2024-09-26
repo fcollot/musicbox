@@ -3,6 +3,7 @@
 
 cmake_minimum_required(VERSION 3.19)
 
+include(CMakePackageConfigHelpers)
 ################################################################################
 # Version
 ################################################################################
@@ -75,7 +76,7 @@ if(APPLE)
     cmake_dependent_option(MBOX_MACOS_BUNDLE "Build standalone as a bundle" ON "MBOX_STANDALONE" OFF)
 endif()
 
-cmake_dependent_option(MBOX_VIRTUAL_ENV "Create a virtual environment in the build directory" OFF "NOT MBOX_STANDALONE" OFF)
+set(MBX_STANDALONE TRUE CACHE STRING "Build standalone application")
 
 option(MBOX_USE_QT5 "Use Qt5 instead of Qt6" OFF)
 
@@ -101,27 +102,23 @@ set(MBOX_VIRTUAL_ENV_ROOT "${MBOX_ROOT}/venv")
 if(UNIX)
     if(APPLE AND MBOX_MACOS_BUNDLE)
         set(contents_subdir "MusicBox.app/Contents")
-        set(MBOX_STANDALONE_LIBRARY_SUBDIR "${contents_subdir}/Frameworks")
-        set(MBOX_STANDALONE_RUNTIME_SUBDIR "${contents_subdir}/MacOS")
+        set(MBOX_RUNTIME_SUBDIR "${contents_subdir}/MacOS")
+        set(MBOX_LIBRARY_SUBDIR "${contents_subdir}/Frameworks")
     else()
-        set(MBOX_STANDALONE_RUNTIME_SUBDIR "bin")
-        set(MBOX_STANDALONE_LIBRARY_SUBDIR "lib")
+        set(MBOX_RUNTIME_SUBDIR "bin")
+        set(MBOX_LIBRARY_SUBDIR "lib")
     endif()
 
-    set(MBOX_PACKAGE_RUNTIME_SUBDIR "bin")
-    set(MBOX_PACKAGE_LIBRARY_SUBDIR "lib")
-    set(MBOX_PACKAGE_ARCHIVE_SUBDIR "lib")
-    set(MBOX_PACKAGE_SHARE_SUBDIR "share/cmake/mbox")
+    set(MBOX_ARCHIVE_SUBDIR "lib")
+    set(MBOX_SHARE_SUBDIR "share/cmake/mbox")
 else()
-    set(MBOX_STANDALONE_RUNTIME_SUBDIR "bin")
-    set(MBOX_STANDALONE_LIBRARY_SUBDIR "bin")
-    set(MBOX_PACKAGE_RUNTIME_SUBDIR "bin")
-    set(MBOX_PACKAGE_LIBRARY_SUBDIR "bin")
-    set(MBOX_PACKAGE_ARCHIVE_SUBDIR "libs")
-    set(MBOX_PACKAGE_SHARE_SUBDIR "cmake")
+    set(MBOX_RUNTIME_SUBDIR "bin")
+    set(MBOX_LIBRARY_SUBDIR "bin")
+    set(MBOX_ARCHIVE_SUBDIR "libs")
+    set(MBOX_SHARE_SUBDIR "cmake")
 endif()
 
-set(MBOX_PACKAGE_INCLUDE_SUBDIR "include")
+set(MBOX_INCLUDE_SUBDIR "include")
 
 ################################################################################
 # Subdirectories

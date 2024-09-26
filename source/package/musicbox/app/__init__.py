@@ -27,3 +27,7 @@ def run(*, gui=False):
             raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
 
     return app.run()
+
+
+def test_modules():
+    return []

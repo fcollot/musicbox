@@ -5,6 +5,11 @@
 import importlib.util
 from threading import RLock
 
+from .core import dev
+
+
+dev.add_loaded_module(__name__)
+
 
 _pyside_version = None
 _lock = RLock()

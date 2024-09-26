@@ -38,13 +38,14 @@ def reload_modules():
 
 
 def run_tests():
+    import importlib
     import unittest
     import musicbox
 
     loader = unittest.defaultTestLoader
     suite = unittest.TestSuite()
     
-    for module in musicbox.test_modules_list():
+    for module in musicbox.test_modules():
         module = importlib.import_module(module)
         suite.addTests(loader.loadTestsFromModule(module))
 

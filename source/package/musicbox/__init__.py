@@ -2,16 +2,30 @@
 # License: BSD-3-Clause
 
 
-from . import config
 from .core import dev
 
 
 dev.add_loaded_module(__name__)
 
 
-def test_modules_list():
+def test_modules():
     """List of modules containing test code.
 
     (used by musicbox.dev.run_tests)
     """
-    return []
+
+    import importlib
+
+    subpackages = [
+        'core',
+        'data',
+        'tui',
+        'app',
+    ]
+    modules = []
+
+    for subpackage in subpackages:
+        package_module = importlib.import_module(f'musicbox.{subpackage}')
+        modules += getattr(package_module, 'test_modules')()
+
+    return modules

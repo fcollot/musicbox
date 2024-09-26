@@ -5,7 +5,8 @@
 import code
 from threading import Lock, Thread
 
-from musicbox import config, dev
+from musicbox import config, dev, tui
+from musicbox.core.messenger import Messenger
 
 if config.pyside_version() == 2:
     from PySide2.QtCore import QCoreApplication
@@ -30,13 +31,23 @@ class CoreApplication(QCoreApplication):
         with self._lock:
             if self._is_running:
                 raise RuntimeError("MusicBox is already running.")
-
+        self._init_messenger()
         self._run_command_line()
 
         if config.pyside_version() == 2:
             return self._exec()
         else:
             return self.exec()
+
+    def _init_messenger(self):
+        messenger = Messenger()
+        self._messenger = messenger
+        messenger.internal_info.connect(print)
+        messenger.internal_warning.connect(print)
+        messenger.internal_alert.connect(print)
+        messenger.user_info.connect(print)
+        messenger.user_warning.connect(print)
+        messenger.user_alert.connect(print)
 
     def _run_command_line(self):
         """Run the Python command line on a separate thread.
@@ -46,7 +57,7 @@ class CoreApplication(QCoreApplication):
         """
         def command_line():
             try:
-                code.interact()
+                code.interact(local=vars(tui))
             except SystemExit:
                 self.quit()
 

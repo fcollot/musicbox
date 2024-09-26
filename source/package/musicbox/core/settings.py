@@ -3,6 +3,11 @@
 
 
 from musicbox import config
+from . import dev
+
+
+dev.add_loaded_module(__name__)
+
 
 if config.pyside_version() == 2:
     from PySide2.QtCore import QSettings
