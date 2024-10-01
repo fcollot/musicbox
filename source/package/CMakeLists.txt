@@ -42,6 +42,6 @@ if(MBOX_VIRTUAL_ENV)
         WORKING_DIRECTORY "${venv_bin}"
         VERBATIM
         )
-endif()
 
-add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+    add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+endif()

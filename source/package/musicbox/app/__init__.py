@@ -2,28 +2,52 @@
 # License: BSD-3-Clause
 
 
-import sys
-
-from musicbox import dev
-
-from .core_application import CoreApplication
+from musicbox.core import dev
+from .application import application_class, init_application_class
 
 
-dev.add_loaded_module(__name__)
+def instance():
+    """The current Qt application instance.
+
+    """
+    return application_class().instance()
 
 
-def run(*, gui=False):
-    if gui:
-        raise NotImplementedError("The GUI is not yet implemented.")
-    else:
-        application_class = CoreApplication
+def run(*, gui=True):
+    """Run MusicBox.
 
-    app = application_class.instance()
+    Use the 'gui' option to run in GUI or console-only mode.
+
+    """
+    init_application_class(gui=gui)
+    app = instance()
 
     if app is None:
-        app = application_class()
+        app = application_class()()
     else:
-        if not isinstance(app, CoreApplication):
-            raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
+        raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
 
     return app.run()
+
+
+def quit():
+    application_class().instance().quit()
+
+
+def main():
+    """Application entry point when running from the command line.
+
+    Do not call this function from Python code. Use 'run()' instead.
+
+    """
+    from argparse import ArgumentParser, BooleanOptionalAction
+
+    parser = ArgumentParser()
+    parser.add_argument('--gui', action=BooleanOptionalAction, default=True)
+    parser.add_argument('--test', action='store_true')
+    args = parser.parse_args()
+
+    if args.test:
+        dev.run_tests(gui=args.gui)
+    else:
+        run(gui=args.gui)

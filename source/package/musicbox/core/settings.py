@@ -2,7 +2,8 @@
 # License: BSD-3-Clause
 
 
-from musicbox import config
+from . import config
+
 
 if config.pyside_version() == 2:
     from PySide2.QtCore import QSettings
@@ -11,6 +12,11 @@ else:
 
 
 class Settings():
+    """ Handle persistent application settings.
+
+    Stored values will persist between application runs.
+
+    """
 
     def __init__(self):
         self._settings = QSettings('liryc', 'musicbox')

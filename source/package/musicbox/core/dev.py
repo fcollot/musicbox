@@ -2,51 +2,85 @@
 # License: BSD-3-Clause
 
 
-from threading import RLock
+import importlib
+from pathlib import Path
+import sys
+import unittest
 
+import musicbox
+from musicbox.core import config
+from musicbox.app.application import application_class, init_application_class
 
-_loaded_modules = []
-_lock = RLock()
-
-
-def add_loaded_module(name):
-    """Declare a loaded module.
-
-    Must be called from every module in the application, right after the imports.
-    (use the __name__ variable as the parameter)
-    This allows the module to be reloaded through the reload_modules() call.
-    """
-    with _lock:
-        _loaded_modules.append(name)
-
-
-add_loaded_module(__name__)
+if config.pyside_version() == 2:
+    from PySide2.QtCore import QThread, QTimer
+else:
+    from PySide6.QtCore import QThread, QTimer
 
 
 def reload_modules():
-    """Reload all previously loaded modules.
+    """Reload all previously loaded MusicBox modules.
 
-    For this to work, add_loaded_module must be used properly.
-    (see the function for more details)
     """
-    import importlib
-    import sys
+    for name, module in sys.modules.copy().items():
+        try:
+            if name.startswith('musicbox.'):
+                importlib.reload(module)
+                print(f'Reloaded {name}.')
+        except Exception as e:
+            print(e)
 
-    with _lock:
-        for module in _loaded_modules:
-            importlib.reload(sys.modules[module])
+
+def run_tests(*, gui=True):
+    """Run the unit tests.
+
+    If the 'gui' option is True, an instance of the application will be created
+    in order to run the GUI specific tests.
+
+    """
+    non_gui_modules, gui_modules = _find_test_modules()
+    run_module_tests(non_gui_modules)
+
+    if gui:
+        init_application_class(gui=True)
+        app = application_class()()
+        timer = QTimer()
+        thread = QThread()
+        timer.setSingleShot(True)
+        timer.timeout.connect(lambda : run_module_tests(gui_modules))
+        timer.timeout.connect(thread.terminate)
+        timer.timeout.connect(app.quit)
+        thread.started.connect(timer.start)
+        thread.start()
+        app.run()
 
 
-def run_tests():
-    import unittest
-    import musicbox
+def run_module_tests(module_names):
+    """Run the unit tests from a list of modules.
 
+    """
     loader = unittest.defaultTestLoader
     suite = unittest.TestSuite()
-    
-    for module in musicbox.test_modules_list():
-        module = importlib.import_module(module)
+
+    for name in module_names:
+        module = importlib.import_module(name)
         suite.addTests(loader.loadTestsFromModule(module))
 
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
+
+
+def _find_test_modules():
+    musicbox_root = musicbox.__path__[0]
+    test_module_paths = list(Path(musicbox_root).glob('**/test_*.py'))
+    gui_modules = []
+    non_gui_modules = []
+    
+    for module_path in test_module_paths:
+        relative_path = module_path.relative_to(Path(musicbox_root).parent)
+        module_name = '.'.join(relative_path.parts)[:-3]
+        if module_name.startswith('musicbox.gui'):
+            gui_modules.append(module_name)
+        else:
+            non_gui_modules.append(module_name)
+
+    return non_gui_modules, gui_modules
