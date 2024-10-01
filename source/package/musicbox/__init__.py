@@ -8,6 +8,10 @@ from .core import dev
 dev.add_loaded_module(__name__)
 
 
+def init():
+    pass
+
+
 def test_modules():
     """List of modules containing test code.
 

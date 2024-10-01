@@ -2,16 +2,16 @@
 # License: BSD-3-Clause
 
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 
 
 parser = ArgumentParser()
-parser.add_argument('--gui', action='store_true')
-parser.add_argument('--tests', action='store_true')
+parser.add_argument('--gui', action=BooleanOptionalAction, default=True)
+parser.add_argument('--test', action='store_true')
 args = parser.parse_args()
 
 
-if args.tests:
+if args.test:
     from . import dev
     dev.run_tests()
 else:

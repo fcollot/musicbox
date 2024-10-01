@@ -2,7 +2,7 @@
 # License: BSD-3-Clause
 
 
-from . import dev
+from musicbox.core import dev
 
 
 dev.add_loaded_module(__name__)
