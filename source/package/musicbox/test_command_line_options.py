@@ -36,19 +36,19 @@ class TestCommandLineOptions(unittest.TestCase):
         """
         Test that --test runs the tests (╯°□°)╯︵ ┻━┻
         """
-        sys.argv = ('', '--test')
+        sys.argv = ['', '--test']
         app.dev.run_tests = self._option_validator()
         app.main()
         self.assertTrue(self._validated)
 
     def test_gui_option(self):
-        sys.argv = ('', '--gui')
+        sys.argv = ['', '--gui']
         app.run = self._option_validator({'gui': True})
         app.main()
         self.assertTrue(self._validated)
 
     def test_no_gui_option(self):
-        sys.argv = ('', '--no-gui')
+        sys.argv = ['', '--no-gui']
         app.run = self._option_validator({'gui': False})
         app.main()
         self.assertTrue(self._validated)
@@ -57,7 +57,7 @@ class TestCommandLineOptions(unittest.TestCase):
         """
         Test that the MusicBox runs in GUI mode by default.
         """
-        sys.argv = ('',)
+        sys.argv = ['']
         app.run = self._option_validator({'gui': True})
         app.main()
         self.assertTrue(self._validated)
