@@ -3,6 +3,7 @@
 
 
 import importlib
+import inspect
 from pathlib import Path
 import sys
 import unittest
@@ -17,15 +18,26 @@ else:
     from PySide6.QtCore import QThread, QTimer
 
 
-def reload_modules():
-    """Reload all previously loaded MusicBox modules.
+def reload_modules(modules_or_names=None):
+    """Reload previously loaded modules.
+
+    If 'modules_or_names' is None all previously loaded MusicBox modules are
+    reloaded.
+
+    This function is intended for development purposes and will likely cause
+    issues.
 
     """
-    for name, module in sys.modules.copy().items():
+    if modules_or_names:
+        module_names = [item.__name__ if inspect.ismodule(item) else item for item in modules_or_names]
+        modules = {name : sys.modules[name] for name in module_names}
+    else:
+        modules = {name : module for module in sys.modules.copy().items() if name.startswith('musicbox.')}
+    
+    for name, module in modules.items():
         try:
-            if name.startswith('musicbox.'):
-                importlib.reload(module)
-                print(f'Reloaded {name}.')
+            importlib.reload(module)
+            print(f'Reloaded {name}.')
         except Exception as e:
             print(e)
 

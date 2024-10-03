@@ -43,5 +43,7 @@ if(MBOX_VIRTUAL_ENV)
         VERBATIM
         )
 
+    add_dependencies(mbox_install_venv mbox_create_venv mbox_package)
+
     add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
 endif()
