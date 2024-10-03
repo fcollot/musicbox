@@ -7,5 +7,6 @@
 *.DS_Store
 *.aps
 *.autosave
+*.pyc
 CMakeLists.txt.user.*
 build
