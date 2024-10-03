@@ -40,6 +40,8 @@ def main():
     Do not call this function from Python code. Use 'run()' instead.
 
     """
+    import sys
+    print(sys.argv)
     from argparse import ArgumentParser, BooleanOptionalAction
 
     parser = ArgumentParser()
