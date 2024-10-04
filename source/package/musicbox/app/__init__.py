@@ -49,12 +49,15 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument('--gui', action=BooleanOptionalAction, default=True)
-    parser.add_argument('--test', action='store_true')
+    parser.add_argument('--test', choices=['no-gui', 'gui', 'all'])
     parser.add_argument('--dev', action='store_true')
     args = parser.parse_args()
 
     if args.test:
-        dev.run_tests(gui=args.gui)
+        if args.test == 'no-gui' or args.test == 'all':
+            dev.run_tests(gui=False)
+        if args.test == 'gui' or args.test == 'all':
+            dev.run_tests(gui=True)
     else:
         if args.dev:
             dev.set_reload_on_import_if_modified(True)

@@ -94,14 +94,14 @@ def _run_module_reload_loop():
     thread.start() 
 
 
-def run_tests(*, non_gui=True, gui=True):
+def run_tests(*, gui=True):
     """Run the unit tests.
 
     If the 'gui' option is True, an instance of the application will be created
     in order to run the GUI specific tests.
 
     """
-    if non_gui:
+    if not gui:
         modules = _find_test_modules(gui=False)
         run_module_tests(modules)
     
@@ -114,7 +114,7 @@ def run_tests(*, non_gui=True, gui=True):
 
                 @Slot()
                 def run(self):
-                    run_tests(non_gui=False, gui=True)
+                    run_tests(gui=True)
 
             init_application_class(gui=gui)
             application = application_class()()
@@ -146,16 +146,15 @@ def run_module_tests(module_names):
 
 def _find_test_modules(gui):
     musicbox_root = musicbox.__path__[0]
-    test_module_paths = list(Path(musicbox_root).glob('**/test_*.py'))
-    gui_modules = []
-    non_gui_modules = []
+    module_prefix = f'{"g" if gui else ""}test_'
+    test_module_paths = list(Path(musicbox_root).glob(f'**/{module_prefix}*.py'))
+    modules = []
     
     for module_path in test_module_paths:
         relative_path = module_path.relative_to(Path(musicbox_root).parent)
-        module_name = '.'.join(relative_path.parts)[:-3]
-        if module_name.startswith('musicbox.gui'):
-            gui_modules.append(module_name)
-        else:
-            non_gui_modules.append(module_name)
+        module_file = relative_path.parts[-1]
+        full_module_name = '.'.join(relative_path.parts)[:-3]
+        if module_file.startswith(module_prefix):
+            modules.append(full_module_name)
 
-    return gui_modules if gui else non_gui_modules
+    return modules

@@ -36,8 +36,24 @@ class TestCommandLineOptions(unittest.TestCase):
         """
         Test that --test runs the tests (╯°□°)╯︵ ┻━┻
         """
-        sys.argv = ['', '--test']
-        app.dev.run_tests = self._option_validator()
+        sys.argv = ['', '--test', 'no-gui']
+        app.dev.run_tests = self._option_validator({'gui': False})
+        app.main()
+        self.assertTrue(self._validated)
+
+        sys.argv = ['', '--test', 'gui']
+        app.dev.run_tests = self._option_validator({'gui': True})
+        app.main()
+        self.assertTrue(self._validated)
+
+        def foo(**kwargs):
+            try:
+                self._option_validator({'gui': True})(**kwargs)
+            except AssertionError:
+                self._option_validator({'gui': False})(**kwargs)
+
+        sys.argv = ['', '--test', 'all']
+        app.dev.run_tests = foo
         app.main()
         self.assertTrue(self._validated)
 
