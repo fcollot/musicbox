@@ -67,12 +67,12 @@ if(MBOX_VIRTUAL_ENV)
 
     add_dependencies(mbox_run_tests mbox_install_venv)
 
-    add_test(NAME "MusicBox package test (no gui)"
+    add_test(NAME "NO GUI: MusicBox package test"
         COMMAND "${venv_python}" -m musicbox --test no-gui
         WORKING_DIRECTORY "${venv_bin}"
         )
 
-    add_test(NAME "MusicBox package test (gui)"
+    add_test(NAME "GUI: MusicBox package test"
         COMMAND "${venv_python}" -m musicbox --test gui
         WORKING_DIRECTORY "${venv_bin}"
         )
