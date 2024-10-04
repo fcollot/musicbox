@@ -77,7 +77,9 @@ endif()
 
 cmake_dependent_option(MBOX_VIRTUAL_ENV "Create a virtual environment in the build directory" OFF "NOT MBOX_STANDALONE" OFF)
 
-option(MBOX_USE_QT5 "Use Qt5 instead of Qt6" OFF)
+if(NOT WIN32)
+    option(MBOX_USE_QT5 "Use Qt5 instead of Qt6" OFF)
+endif()
 
 if(MBOX_USE_QT5)
     set(MBOX_QT_PACKAGE "Qt5")
