@@ -77,15 +77,14 @@ endif()
 
 cmake_dependent_option(MBOX_VIRTUAL_ENV "Create a virtual environment in the build directory" OFF "NOT MBOX_STANDALONE" OFF)
 
-string(CONCAT symlink_message
-    "Use a symbolic link to the Python package in the source tree, so that"
-    " modifications to the source code directly affects the packaged installed"
-    " in the buile tree."
-    )
-
-option(MBOX_SYMLINK_SOURCE_PACKAGE ${symlink_message} OFF)
-
-if(NOT WIN32)
+if(WIN32)
+    string(CONCAT symlink_message
+        "Use a symbolic link to the Python package in the source tree, so that"
+        " modifications to the source code directly affects the packaged installed"
+        " in the buile tree."
+        )
+    option(MBOX_SYMLINK_SOURCE_PACKAGE ${symlink_message} OFF)
+else()
     option(MBOX_USE_QT5 "Use Qt5 instead of Qt6" OFF)
 endif()
 
