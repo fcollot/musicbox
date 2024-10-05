@@ -9,10 +9,10 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup.py"
     "${CMAKE_CURRENT_BINARY_DIR}/setup.py"
     @ONLY)
 
-if(MBOX_SYMLINK_SOURCE_PACKAGE)
-    set(link_command create_symlink)
-else()
+if(WIN32 AND NOT MBOX_SYMLINK_SOURCE_PACKAGE)
     set(link_command copy_directory)
+else()
+    set(link_command create_symlink)
 endif()
 
 add_custom_target(mbox_package ALL
