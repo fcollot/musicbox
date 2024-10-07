@@ -47,7 +47,7 @@ class LineEdit(QLineEdit):
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Return:
-            self.line.emit(self.prompt(), self.text())
+            self.line.emit(self.text(), self.prompt())
         elif key == Qt.Key_Up:
             self.up.emit()
         elif key == Qt.Key_Down:
@@ -56,6 +56,12 @@ class LineEdit(QLineEdit):
             super().keyPressEvent(event)
         else:
             event.accept()
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        min_position = len(self.prompt())
+        if self.cursorPosition() < min_position:
+            self.setCursorPosition(min_position)
 
     def text(self):
         return super().text()[len(self.prompt()):]

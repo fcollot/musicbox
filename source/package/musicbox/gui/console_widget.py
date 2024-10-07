@@ -9,10 +9,10 @@ from musicbox.core import config, console
 from .line_edit import LineEdit
 
 if config.pyside_version() == 2:
-    from PySide2.QtCore import Qt, Signal, Slot
+    from PySide2.QtCore import QCoreApplication, QEventLoop, Qt, Signal, Slot
     from PySide2.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 else:
-    from PySide6.QtCore import Qt, Signal, Slot
+    from PySide6.QtCore import QCoreApplication, QEventLoop, Qt, Signal, Slot
     from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 
@@ -22,7 +22,6 @@ class ConsoleWidget(QWidget):
     (The console must be created before this widget)
     In addition to providing a GUI for the console, this widget adds code
     completion using the tab key.
-
     """
 
     def __init__(self, parent=None, *, size=(800, 600), title="MusicBox Python console", locals={}):
@@ -62,11 +61,11 @@ class ConsoleWidget(QWidget):
         self.setFocusProxy(self._input_widget)
         self._update_input_widget()
         self._input_widget.line.connect(self._handle_input)
+        #self._input_widget.line.connect(console.instance().push)
         self._input_widget.up.connect(console.instance().move_up_history)
         self._input_widget.up.connect(self._update_input_widget)
         self._input_widget.down.connect(console.instance().move_down_history)
         self._input_widget.down.connect(self._update_input_widget)
-        self._input_widget.cursorPositionChanged.connect(self._ensure_cursor_after_prompt)
         self._input_widget.tab.connect(self._complete_input)
 
     def _init_fonts(self):
@@ -90,18 +89,19 @@ class ConsoleWidget(QWidget):
             sys.stderr = self._stderr
   
     @Slot(str, str)
-    def _handle_input(self, prompt, text):
+    def _handle_input(self, text, prompt):
         print(f'{prompt}{text}')
+        self._output_widget.repaint()
+        self._input_widget.set_prompt()
+        self._input_widget.setText()
+        self._input_widget.repaint()
+        QCoreApplication.instance().processEvents(QEventLoop.ExcludeUserInputEvents)
         console.instance().push(text)
         self._update_input_widget()
 
     def _update_input_widget(self):
         self._input_widget.set_prompt(console.instance().prompt())
         self._input_widget.setText(console.instance().current_history_entry())
-
-    @Slot(int, int)
-    def _ensure_cursor_after_prompt(self, _, new_position):
-        self._input_widget.setCursorPosition(max(len(self._input_widget.prompt()), new_position))
 
     def write(self, text):
         self._output_widget.setText(f'{self._output_widget.text()}{text}')

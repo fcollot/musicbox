@@ -9,9 +9,15 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup.py"
     "${CMAKE_CURRENT_BINARY_DIR}/setup.py"
     @ONLY)
 
+if(MBOX_SYMLINK_SOURCE_PACKAGE)
+    set(link_command create_symlink)
+else()
+    set(link_command copy_directory)
+endif()
+
 add_custom_target(mbox_package ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${MBOX_PACKAGE_ROOT}/musicbox"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_CURRENT_SOURCE_DIR}/musicbox" "${MBOX_PACKAGE_ROOT}/musicbox/musicbox"
+    COMMAND ${CMAKE_COMMAND} -E ${link_command} "${CMAKE_CURRENT_SOURCE_DIR}/musicbox" "${MBOX_PACKAGE_ROOT}/musicbox/musicbox"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/setup.py" "${MBOX_PACKAGE_ROOT}/musicbox/"
     SOURCES ${sources}
     VERBATIM
@@ -42,8 +48,33 @@ if(MBOX_VIRTUAL_ENV)
         WORKING_DIRECTORY "${venv_bin}"
         VERBATIM
         )
+    add_dependencies(mbox_install_venv mbox_create_venv mbox_package)
 
     add_dependencies(mbox_install_venv mbox_create_venv mbox_package)
 
-    add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+    add_custom_target(mbox_run_application
+        COMMAND "${venv_python}" -m musicbox
+        WORKING_DIRECTORY "${venv_bin}"
+        VERBATIM
+        )
+
+    add_dependencies(mbox_run_application mbox_install_venv)
+
+    add_custom_target(mbox_run_tests
+        COMMAND "${venv_python}" -m musicbox --test
+        WORKING_DIRECTORY "${venv_bin}"
+        VERBATIM
+        )
+
+    add_dependencies(mbox_run_tests mbox_install_venv)
+
+    add_test(NAME "NO GUI: MusicBox package test"
+        COMMAND "${venv_python}" -m musicbox --test no-gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
+
+    add_test(NAME "GUI: MusicBox package test"
+        COMMAND "${venv_python}" -m musicbox --test gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
 endif()

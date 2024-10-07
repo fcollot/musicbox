@@ -117,4 +117,7 @@ def _create_application_class(base_class, gui):
             thread = Thread(target=command_line, name="Console command line", daemon=True)
             thread.start()
 
+        def console_widget(self):
+            return self._console_widget
+
     return Application
