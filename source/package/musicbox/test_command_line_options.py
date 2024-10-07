@@ -25,68 +25,75 @@ class TestCommandLineOptions(unittest.TestCase):
 
     def setUp(self):
         self._previous_argv = sys.argv
-        app.run = self._dummy_function
-        app.dev.run_tests = self._dummy_function
-        self._validated = False
+        app.run = self._function_call_tracker('run_app')
+        app.dev.run_tests = self._function_call_tracker('run_tests')
+        app.dev.set_auto_reload = self._function_call_tracker('set_auto_reload')
+        self._function_calls = []
 
     def tearDown(self):
         sys.argv = self._previous_argv
 
-    def test_test_option(self):
+    def test_non_gui_tests_option(self):
         """
-        Test that --test runs the tests (╯°□°)╯︵ ┻━┻
+        Test that '--test no-gui' runs the non-gui tests.
         """
-        sys.argv = ['', '--test', 'no-gui']
-        app.dev.run_tests = self._option_validator({'gui': False})
-        app.main()
-        self.assertTrue(self._validated)
+        self._test_options_trigger_function_call(['--test', 'no-gui'], 'run_tests', [[{'gui': False}]])
 
-        sys.argv = ['', '--test', 'gui']
-        app.dev.run_tests = self._option_validator({'gui': True})
-        app.main()
-        self.assertTrue(self._validated)
+    def test_gui_tests_option(self):
+        """
+        Test that '--test gui' runs the gui tests.
+        """
+        self._test_options_trigger_function_call(['--test', 'gui'], 'run_tests', [[{'gui': True}]])
 
-        def foo(**kwargs):
-            try:
-                self._option_validator({'gui': True})(**kwargs)
-            except AssertionError:
-                self._option_validator({'gui': False})(**kwargs)
-
-        sys.argv = ['', '--test', 'all']
-        app.dev.run_tests = foo
-        app.main()
-        self.assertTrue(self._validated)
+    def test_all_tests_option(self):
+        """
+        Test that '--test all' runs all the tests.
+        """
+        self._test_options_trigger_function_call(['--test', 'all'], 'run_tests', [[{'gui': True}], [{'gui': False}]])
 
     def test_gui_option(self):
         sys.argv = ['', '--gui']
-        app.run = self._option_validator({'gui': True})
-        app.main()
-        self.assertTrue(self._validated)
+        self._test_options_trigger_function_call(['--gui'], 'run_app', [[{'gui': True}]])
 
     def test_no_gui_option(self):
-        sys.argv = ['', '--no-gui']
-        app.run = self._option_validator({'gui': False})
-        app.main()
-        self.assertTrue(self._validated)
+        self._test_options_trigger_function_call(['--no-gui'], 'run_app', [[{'gui': False}]])
 
     def test_gui_option_is_default(self):
         """
         Test that the MusicBox runs in GUI mode by default.
         """
+        self._test_options_trigger_function_call([], 'run_app', [[{'gui': True}]])
+
+    def test_dev_option_triggers_auto_reload(self):
+        self._test_options_trigger_function_call(['--dev'], 'set_auto_reload', [[True]])
+
+    def test_auto_reload_is_off_by_default(self):
         sys.argv = ['']
-        app.run = self._option_validator({'gui': True})
         app.main()
-        self.assertTrue(self._validated)
+        self.assertFalse(app.dev.auto_reload())
 
-    def _option_validator(self, expected_kwargs={}):
-        def _validate_option(**kwargs):
-            for name, value in expected_kwargs.items():
-                self.assertIn(name, kwargs)
-                self.assertEqual(kwargs[name], value)
-            self._validated = True
+    def _function_call_tracker(self, name):
+        def _track_function_call(*args, **kwargs):
+            all_args = [*args]
+            if kwargs:
+                all_args.append(kwargs)
+            self._function_calls.append([name, all_args])
+        return _track_function_call
 
-        return _validate_option
-
-    @staticmethod
-    def _dummy_function(*args, **kwargs):
-        pass      
+    def _test_options_trigger_function_call(self, cl_options, function_name, expected_args_list):
+        sys.argv = ['', *cl_options]
+        app.main()
+        args_list = []
+        for function_call in self._function_calls:
+            name, args = function_call
+            if name == function_name:
+                args_list.append(args)
+        if not args:
+            raise AssertionError(f'The function {function_name} was not called.')
+        for expected_args in expected_args_list:
+            try:
+                args_list.remove(expected_args)
+            except:
+                raise AssertionError(f'Expected {function_name} to be called with arguments {expected_args_list}.')
+        if args_list:
+            raise AssertionsError(f'Unexpected call(s) to {functio_name} with argument(s) {args_list}.')

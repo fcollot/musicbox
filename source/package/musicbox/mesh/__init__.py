@@ -6,8 +6,10 @@ import numpy
 import vtk
 from vtk.util import numpy_support
 
+from .primitive import box
 
-def create_vtk_mesh(arg_1, *, vertices=None, lines=None, triangles=None, strips=None):
+
+def create(arg_1, *, vertices=None, lines=None, triangles=None, strips=None):
     """Create a VTK mesh.
 
     Args:

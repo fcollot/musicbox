@@ -60,5 +60,5 @@ def main():
             dev.run_tests(gui=True)
     else:
         if args.dev:
-            dev.set_reload_on_import_if_modified(True)
+            dev.set_auto_reload(True)
         run(gui=args.gui)

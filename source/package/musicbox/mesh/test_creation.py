@@ -4,11 +4,11 @@
 
 import unittest
 
-from .mesh import *
+from . import *
 
 
-class TestVTKMeshCreation(unittest.TestCase):
+class TestMeshCreation(unittest.TestCase):
 
     def test_output_is_vtk_poly_data(self):
-        mesh = create_vtk_mesh(8, triangles=12)
+        mesh = create(8, triangles=12)
         self.assertIsInstance(mesh, vtk.vtkPolyData)

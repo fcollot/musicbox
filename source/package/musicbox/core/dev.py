@@ -28,7 +28,7 @@ _reload_setting_lock = RLock()
 _import_times = {}
 
 
-def set_reload_on_import_if_modified(enable):
+def set_auto_reload(enable):
     with _reload_setting_lock:
         global _reload_activated
 
@@ -51,6 +51,10 @@ def set_reload_on_import_if_modified(enable):
             if '_builtins_import' in globals():
                 builtins.__import__ = _builtins_import
             _reload_activated = False
+
+
+def auto_reload():
+    return _reload_activated
 
 
 def _import_and_track_time(name, globals=None, locals=None, fromlist=(), level=0):

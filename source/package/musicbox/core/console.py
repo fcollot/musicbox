@@ -8,6 +8,13 @@ from importlib.metadata import version
 import sys
 from threading import Lock
 
+from musicbox.core import config
+
+if config.pyside_version() == 2:
+    from PySide2.QtCore import Object, Slot
+else:
+    from PySide6.QtCore import QObject, Slot
+
 
 _instance = None
 _lock = Lock()
@@ -46,7 +53,7 @@ def instance():
         return _instance
 
 
-class _Console():
+class _Console(QObject):
     """Interactive console for the Python intepreter.
 
     This class is a wrapper over the code module's InteractoveConsole class. It
@@ -66,6 +73,7 @@ class _Console():
         and 'quit' functions.
 
         """
+        super().__init__()
         try:
             self._init_internal_console(locals)
             self._init_builtins(exit_function)
@@ -115,6 +123,7 @@ class _Console():
     def _restore_builtins(self):
         vars(sys.modules['builtins']).update(self._builtins_dict_copy)
 
+    @Slot(str)
     def push(self, line):
         """Push a line of text to the console.
 
@@ -156,9 +165,11 @@ class _Console():
 
     def current_history_entry(self):
         return self._history[self._history_index]
-    
+
+    @Slot()
     def move_up_history(self):
         self._history_index = max(self._history_index - 1, 0)
 
+    @Slot()
     def move_down_history(self):
         self._history_index = min(self._history_index + 1, len(self._history) - 1)

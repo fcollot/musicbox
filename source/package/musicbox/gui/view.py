@@ -42,9 +42,14 @@ class _ViewManager():
                     mapper.SetInputData(arg)
                     prop = vtk.vtkActor()
                     prop.SetMapper(mapper)
+            elif isinstance(arg, vtk.vtkPolyDataAlgorithm):
+                mapper = vtk.vtkPolyDataMapper()
+                mapper.SetInputConnection(arg.GetOutputPort())
+                prop = vtk.vtkActor()
+                prop.SetMapper(mapper)
 
         if not prop:
-            raise TypeError(f'Cannot create prop from {type(arg)}')
+            raise TypeError(f'Cannot create prop from {type(arg).__name__}')
 
         self._props[arg] = prop
         return prop
@@ -78,6 +83,6 @@ class _View(QVTKRenderWindowInteractor):
 class _View3D(_View):
 
     def add_data(self, data):
-        prop = manager().find_or_create_prop(prop, '3D')
-        self.renderer.add_prop(prop)
+        prop = manager().find_or_create_prop(data, '3D')
+        self.renderer.AddViewProp(prop)
             
