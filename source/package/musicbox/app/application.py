@@ -5,7 +5,7 @@
 from threading import Lock, Thread
 
 import musicbox
-from musicbox.core import config, console
+from musicbox.core import config
 
 
 _application_class = None
@@ -70,14 +70,9 @@ def _create_application_class(base_class, gui):
                     raise RuntimeError("MusicBox is already running.")
                 self._is_running = True
 
-            console_locals = {'musicbox' : musicbox, 'mb' : musicbox}
+            self._run_console()
 
-            with console.open(locals=console_locals, show_welcome=False, exit_function=self.quit):
-                if self._gui:
-                    self._init_console_widget()
-                else:
-                    self._init_console_command_line()
-                exit_value = self._run_qt()
+            exit_value = self._run_qt()
 
             with self._lock:
                 self._is_running = False
@@ -90,31 +85,21 @@ def _create_application_class(base_class, gui):
             else:
                 return self.exec()
 
-        def _init_console_widget(self):
-            from musicbox.gui.console_widget import ConsoleWidget
+        def _run_console(self):
+            if self._gui:
+                from musicbox.gui.console_widget import ConsoleWidget as Console
+            else:
+                from musicbox.core.console import Console
 
-            self._console_widget = ConsoleWidget()
-            self._console_widget.show()
-            self.aboutToQuit.connect(lambda : self._console_widget.update_output_streams(False))
+            globals = {'musicbox' : musicbox, 'mb' : musicbox}
+            console = Console(globals=globals)
+            console.run_ended.connect(self.quit)
+            console.run()
 
-        def _init_console_command_line(self):
-            """Run the console command line on a separate thread.
+            if self._gui:
+                console.show()
 
-            The command line cannot use the main thread as that one is occupied by
-            the Qt event loop (which must be in the main thread).
-
-            """
-            def command_line():
-                try:
-                    console.instance().show_welcome()
-
-                    while True:
-                        line = input(console.instance().prompt())
-                        console.instance().push(line)
-                except Exception as e:
-                    print(e)
-
-            thread = Thread(target=command_line, name="Console command line", daemon=True)
-            thread.start()
+        def console_widget(self):
+            return self._console_widget
 
     return Application

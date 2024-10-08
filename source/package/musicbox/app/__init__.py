@@ -2,15 +2,20 @@
 # License: BSD-3-Clause
 
 
-from musicbox.core import dev
+from musicbox.core import config, dev
 from .application import application_class, init_application_class
+
+if config.pyside_version() == 2:
+    from PySide2.QtCore import QCoreApplication
+else:
+    from PySide6.QtCore import QCoreApplication
 
 
 def instance():
     """The current Qt application instance.
 
     """
-    return application_class().instance()
+    return QCoreApplication.instance()
 
 
 def run(*, gui=True):
@@ -19,10 +24,10 @@ def run(*, gui=True):
     Use the 'gui' option to run in GUI or console-only mode.
 
     """
-    init_application_class(gui=gui)
     app = instance()
 
     if app is None:
+        init_application_class(gui=gui)
         app = application_class()()
     else:
         raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
@@ -31,7 +36,7 @@ def run(*, gui=True):
 
 
 def quit():
-    application_class().instance().quit()
+    instance().quit()
 
 
 def main():
@@ -44,10 +49,16 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument('--gui', action=BooleanOptionalAction, default=True)
-    parser.add_argument('--test', action='store_true')
+    parser.add_argument('--test', choices=['no-gui', 'gui', 'all'])
+    parser.add_argument('--dev', action='store_true')
     args = parser.parse_args()
 
     if args.test:
-        dev.run_tests(gui=args.gui)
+        if args.test == 'no-gui' or args.test == 'all':
+            dev.run_tests(gui=False)
+        if args.test == 'gui' or args.test == 'all':
+            dev.run_tests(gui=True)
     else:
+        if args.dev:
+            dev.set_auto_reload(True)
         run(gui=args.gui)
