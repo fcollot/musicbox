@@ -81,6 +81,18 @@ if(MBOX_VIRTUAL_ENV)
         )
 
     add_dependencies(mbox_run_tests mbox_install_venv)
+    
+    ############################################################################
+    # Distribution
+    ############################################################################
+
+    add_custom_target(mbox_build_distribution ALL
+        COMMAND "${venv_python}" -m build "${MBOX_PACKAGE_ROOT}/musicbox"
+        WORKING_DIRECTORY "${venv_bin}"
+        VERBATIM
+        )
+        
+    add_dependencies(mbox_build_distribution mbox_install_venv)
 
     ############################################################################
     # CTest
