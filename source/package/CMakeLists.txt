@@ -46,4 +46,17 @@ if(MBOX_VIRTUAL_ENV)
     add_dependencies(mbox_install_venv mbox_create_venv mbox_package)
 
     add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+
+    ############################################################################
+    # Distribution
+    ############################################################################
+
+    add_custom_target(mbox_build_distribution ALL
+        COMMAND "${venv_python}" -m build "${MBOX_PACKAGE_ROOT}/musicbox"
+        WORKING_DIRECTORY "${venv_bin}"
+        VERBATIM
+        )
+
+    add_dependencies(mbox_build_distribution mbox_install_venv)
+
 endif()
