@@ -5,16 +5,16 @@
 import importlib
 from pathlib import Path
 import sys
+from threading import Thread
 import unittest
 
 import musicbox
 from musicbox.core import config
-from musicbox.app.application import application_class, init_application_class
 
 if config.pyside_version() == 2:
-    from PySide2.QtCore import QThread, QTimer
+    from PySide2.QtCore import QCoreApplication, QObject, QThread, QTimer, Slot
 else:
-    from PySide6.QtCore import QThread, QTimer
+    from PySide6.QtCore import QCoreApplication, QObject, QThread, QTimer, Slot
 
 
 def reload_modules():
@@ -33,54 +33,106 @@ def reload_modules():
 def run_tests(*, gui=True):
     """Run the unit tests.
 
-    If the 'gui' option is True, an instance of the application will be created
-    in order to run the GUI specific tests.
+    The 'gui' option determines whether the GUI or non-GUI tests are run. This
+    function may be called from the main thread of a running application or
+    not; in the latter case a temporary QCoreApplication (or QApplication for
+    GUI tests) will be created.
 
     """
-    non_gui_modules, gui_modules = _find_test_modules()
-    run_module_tests(non_gui_modules)
+    preexisting_app = QCoreApplication.instance()
 
-    if gui:
-        init_application_class(gui=True)
-        app = application_class()()
-        timer = QTimer()
-        thread = QThread()
-        timer.setSingleShot(True)
-        timer.timeout.connect(lambda : run_module_tests(gui_modules))
-        timer.timeout.connect(thread.terminate)
-        timer.timeout.connect(app.quit)
-        thread.started.connect(timer.start)
-        thread.start()
-        app.run()
+    if not gui:
+        if not preexisting_app:
+            QCoreApplication()
+    else:
+        if preexisting_app:
+            if QThread.currentThread() is not preexisting_app.thread():
+                raise RuntimeError("The GUI tests must be run from the main thread.")
+        else:
+            _create_gui_application_and_run_tests()
+            return
+
+    try:
+        modules = find_test_modules(gui=gui)
+        if modules:
+            run_module_tests(modules)
+        else:
+            raise RuntimeError("No tests found.")
+    finally:
+        if not preexisting_app:
+            QCoreApplication.instance().shutdown()
+
+
+def _create_gui_application_and_run_tests():
+
+    class GUITestRunner(QObject):
+        @Slot()
+        def run(self):
+            run_tests(gui=True)
+
+    if config.pyside_version() == 2:
+        from PySide2.QtWidgets import QApplication
+    else:
+        from PySide6.QtWidgets import QApplication
+
+    app = QApplication()
+    runner = GUITestRunner()
+    timer = QTimer()
+    thread = QThread()
+
+    timer.setSingleShot(True)
+    timer.timeout.connect(runner.run)
+    timer.timeout.connect(thread.terminate)
+    timer.timeout.connect(app.instance().quit)
+
+    thread.started.connect(timer.start)
+    thread.start()
+
+    if config.pyside_version() == 2:
+        return app._exec()
+    else:
+        return app.exec()
 
 
 def run_module_tests(module_names):
     """Run the unit tests from a list of modules.
 
+    If any of the modules contain GUI tests (which require a running
+    QApplication), it is up to the caller to ensure the application was created
+    beforehand and that this function is called from the main thread.
+
     """
     loader = unittest.defaultTestLoader
-    suite = unittest.TestSuite()
+    runner = unittest.TextTestRunner(verbosity=2)
 
     for name in module_names:
         module = importlib.import_module(name)
+        suite = unittest.TestSuite()
         suite.addTests(loader.loadTestsFromModule(module))
-
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
+        runner.run(suite)
 
 
-def _find_test_modules():
+def find_test_modules(gui):
+    """Find the unit test modules using prefixes.
+
+    The prefixes are:
+
+        - '_test_' for non GUI tests (which may optionally need a running
+          QCoreApplication to handle events).
+
+        - '_gui_test_' for GUI tests (which require a running QApplication).
+
+    """
     musicbox_root = musicbox.__path__[0]
-    test_module_paths = list(Path(musicbox_root).glob('**/test_*.py'))
-    gui_modules = []
-    non_gui_modules = []
+    module_prefix = f'_{"gui_" if gui else ""}test_'
+    test_module_paths = list(Path(musicbox_root).glob(f'**/{module_prefix}*.py'))
+    modules = []
     
     for module_path in test_module_paths:
         relative_path = module_path.relative_to(Path(musicbox_root).parent)
-        module_name = '.'.join(relative_path.parts)[:-3]
-        if module_name.startswith('musicbox.gui'):
-            gui_modules.append(module_name)
-        else:
-            non_gui_modules.append(module_name)
+        module_file = relative_path.parts[-1]
+        full_module_name = '.'.join(relative_path.parts)[:-3]
+        if module_file.startswith(module_prefix):
+            modules.append(full_module_name)
 
-    return non_gui_modules, gui_modules
+    return modules

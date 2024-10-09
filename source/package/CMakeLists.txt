@@ -45,5 +45,21 @@ if(MBOX_VIRTUAL_ENV)
 
     add_dependencies(mbox_install_venv mbox_create_venv mbox_package)
 
-    add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+    ############################################################################
+    # CTest
+    ############################################################################
+
+    add_test(NAME ${PROJECT_NAME}_no_gui
+        COMMAND "${venv_python}" -m musicbox --test no-gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
+
+    add_test(NAME ${PROJECT_NAME}_gui
+        COMMAND "${venv_python}" -m musicbox --test gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
+
+    set_property(TEST ${PROJECT_NAME}_no_gui PROPERTY LABELS TEST_NO_GUI)
+    set_property(TEST ${PROJECT_NAME}_gui PROPERTY LABELS TEST_GUI)
+
 endif()
