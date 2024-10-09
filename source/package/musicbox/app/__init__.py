@@ -19,7 +19,6 @@ def run(*, gui=True):
     Use the 'gui' option to run in GUI or console-only mode.
 
     """
-    init_application_class(gui=gui)
     app = instance()
 
     if app is None:
@@ -44,10 +43,13 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument('--gui', action=BooleanOptionalAction, default=True)
-    parser.add_argument('--test', action='store_true')
+    parser.add_argument('--test', choices=['no-gui', 'gui', 'all'])
     args = parser.parse_args()
 
     if args.test:
-        dev.run_tests(gui=args.gui)
+        if args.test == 'no-gui' or args.test == 'all':
+            dev.run_tests(gui=False)
+        if args.test == 'gui' or args.test == 'all':
+            dev.run_tests(gui=True)
     else:
         run(gui=args.gui)
