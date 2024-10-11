@@ -3,14 +3,7 @@
 
 
 from musicbox.core import dev
-from .application import application_class, init_application_class
-
-
-def instance():
-    """The current Qt application instance.
-
-    """
-    return application_class().instance()
+from .application import create, instance
 
 
 def run(*, gui=True):
@@ -22,15 +15,11 @@ def run(*, gui=True):
     app = instance()
 
     if app is None:
-        app = application_class()()
+        app = create(gui=gui)
     else:
         raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
 
     return app.run()
-
-
-def quit():
-    application_class().instance().quit()
 
 
 def main():

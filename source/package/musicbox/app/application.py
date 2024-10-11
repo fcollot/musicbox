@@ -7,56 +7,46 @@ from threading import Lock, Thread
 import musicbox
 from musicbox.core import config, console
 
+if config.pyside_version() == 2:
+    from PySide2.QtCore import QCoreApplication
+else:
+    from PySide6.QtCore import QCoreApplication
 
-_application_class = None
+
+def instance():
+    return QCoreApplication.instance()
 
 
-def init_application_class(*, gui=True):
-    """Initialize the application class.
+def create(*args, gui=True, **kwargs):
+    """Create the application.
 
-    Specify 'gui=False' for a console-only application.
+    Set 'gui' to False for a non-GUI application.
+    The remaining arguments are forwarded to the class constructor.
 
     """
+    base_class = _select_base_class(gui)
+    application_class = _create_application_class(base_class)
+    return application_class(*args, **kwargs)
+
+
+def _select_base_class(gui):
     if gui:
         if config.pyside_version() == 2:
             from PySide2.QtWidgets import QApplication
         else:
             from PySide6.QtWidgets import QApplication
 
-        base_class = QApplication
+        return QApplication
     else:
-        if config.pyside_version() == 2:
-            from PySide2.QtCore import QCoreApplication
-        else:
-            from PySide6.QtCore import QCoreApplication
-
-        base_class = QCoreApplication
-
-    global _application_class
-    _application_class = _create_application_class(base_class, gui)
-    return _application_class
+        return QCoreApplication
 
 
-def application_class():
-    """The application class.
-
-    If the class has not been initialized yet (using init_application_class),
-    a default one will be initialized.
-
-    """
-    if not _application_class:
-        return init_application_class()
-    else:
-        return _application_class
-
-
-def _create_application_class(base_class, gui):
+def _create_application_class(base_class):
 
     class Application(base_class):
 
         _lock = Lock()
         _is_running = False
-        _gui = gui
 
         def __init__(self, argv=None):
             super().__init__(argv=argv)
@@ -73,7 +63,7 @@ def _create_application_class(base_class, gui):
             console_locals = {'musicbox' : musicbox, 'mb' : musicbox}
 
             with console.open(locals=console_locals, show_welcome=False, exit_function=self.quit):
-                if self._gui:
+                if base_class.__name__ == 'QApplication':
                     self._init_console_widget()
                 else:
                     self._init_console_command_line()
