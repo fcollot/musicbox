@@ -27,10 +27,15 @@ class TestCommandLine(unittest.TestCase):
         self._previous_argv = sys.argv
         self._args = {}
         self._kwargs = {}
-        app.run = self._function_call_tracker('run')
-        app.dev.run_tests = self._function_call_tracker('run_tests')
+        app.run = self._function_call_tracker('run', 0)
+        app.dev.run_tests = self._function_call_tracker('run_tests', True)
+        self._exit = sys.exit
+        sys.exit = lambda _ : None
 
-    def _function_call_tracker(self, name):
+    def tearDown(self):
+        sys.exit = self._exit
+
+    def _function_call_tracker(self, name, return_value):
         def _track_function_call(*args, **kwargs):
             if name in self._args:
                 self._args[name].append(args)
@@ -40,6 +45,8 @@ class TestCommandLine(unittest.TestCase):
                 self._kwargs[name].append(kwargs)
             else:
                 self._kwargs[name] = [kwargs]
+            return return_value
+
         return _track_function_call
 
     def tearDown(self):
