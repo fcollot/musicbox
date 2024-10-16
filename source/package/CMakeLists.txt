@@ -67,7 +67,6 @@ if(MBOX_VIRTUAL_ENV)
 
     add_custom_target(mbox_run_application
         COMMAND "${venv_python}" -m musicbox
-        WORKING_DIRECTORY "${venv_bin}"
         VERBATIM
         )
 
@@ -85,6 +84,17 @@ if(MBOX_VIRTUAL_ENV)
     # CTest
     ############################################################################
 
-    add_test(NAME "MusicBox package" COMMAND "${venv_python}" -m musicbox --test)
+    add_test(NAME ${PROJECT_NAME}_no_gui
+        COMMAND "${venv_python}" -m musicbox --test no-gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
+
+    add_test(NAME ${PROJECT_NAME}_gui
+        COMMAND "${venv_python}" -m musicbox --test gui
+        WORKING_DIRECTORY "${venv_bin}"
+        )
+
+    set_property(TEST ${PROJECT_NAME}_no_gui PROPERTY LABELS TEST_NO_GUI)
+    set_property(TEST ${PROJECT_NAME}_gui PROPERTY LABELS TEST_GUI)
 
 endif()
