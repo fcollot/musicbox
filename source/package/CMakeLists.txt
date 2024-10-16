@@ -97,4 +97,17 @@ if(MBOX_VIRTUAL_ENV)
     set_property(TEST ${PROJECT_NAME}_no_gui PROPERTY LABELS TEST_NO_GUI)
     set_property(TEST ${PROJECT_NAME}_gui PROPERTY LABELS TEST_GUI)
 
+    ############################################################################
+    # Distribution
+    ############################################################################
+
+    add_custom_target(mbox_build_distribution ALL
+        COMMAND "${venv_python}" -m build "${MBOX_PACKAGE_ROOT}/musicbox"
+        WORKING_DIRECTORY "${venv_bin}"
+        VERBATIM
+        )
+
+    add_dependencies(mbox_build_distribution mbox_install_venv)
+
+
 endif()
