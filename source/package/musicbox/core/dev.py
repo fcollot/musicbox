@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import sys
 from threading import Thread, RLock
+import traceback
 import time
 import unittest
 
@@ -167,39 +168,48 @@ def run_tests(*, gui=True):
     """
     preexisting_app = QCoreApplication.instance()
 
-    if not gui:
-        if not preexisting_app:
-            QCoreApplication()
-    else:
+    if gui:
         if preexisting_app:
             if QThread.currentThread() is not preexisting_app.thread():
                 raise RuntimeError("The GUI tests must be run from the main thread.")
         else:
-            _create_gui_application_and_run_tests()
-            return
+            return _create_gui_application_and_run_tests()
+
+    if not preexisting_app:
+        QCoreApplication()
 
     try:
         modules = find_test_modules(gui=gui)
         if modules:
-            run_module_tests(modules)
+            results = run_module_tests(modules)
+            success = all([result.wasSuccessful() for result in results])
         else:
             raise RuntimeError("No tests found.")
     finally:
         if not preexisting_app:
             QCoreApplication.instance().shutdown()
 
+    return success
+
 
 def _create_gui_application_and_run_tests():
-
-    class GUITestRunner(QObject):
-        @Slot()
-        def run(self):
-            run_tests(gui=True)
 
     if config.pyside_version() == 2:
         from PySide2.QtWidgets import QApplication
     else:
         from PySide6.QtWidgets import QApplication
+
+    class GUITestRunner(QObject):
+        @Slot()
+        def run(self):
+            try:
+                success = run_tests(gui=True)
+                exit_code = 0 if success else 1
+            except:
+                traceback.print_exc()
+                exit_code = 1
+            finally:
+                QApplication.instance().exit(exit_code)
 
     app = QApplication()
     runner = GUITestRunner()
@@ -209,15 +219,14 @@ def _create_gui_application_and_run_tests():
     timer.setSingleShot(True)
     timer.timeout.connect(runner.run)
     timer.timeout.connect(thread.terminate)
-    timer.timeout.connect(app.instance().quit)
 
     thread.started.connect(timer.start)
     thread.start()
 
     if config.pyside_version() == 2:
-        return app._exec()
+        return app._exec() == 0
     else:
-        return app.exec()
+        return app.exec() == 0
 
 
 def run_module_tests(module_names):
@@ -230,12 +239,15 @@ def run_module_tests(module_names):
     """
     loader = unittest.defaultTestLoader
     runner = unittest.TextTestRunner(verbosity=2)
+    results = []
 
     for name in module_names:
         module = importlib.import_module(name)
         suite = unittest.TestSuite()
         suite.addTests(loader.loadTestsFromModule(module))
-        runner.run(suite)
+        results.append(runner.run(suite))
+
+    return results
 
 
 def find_test_modules(gui):
