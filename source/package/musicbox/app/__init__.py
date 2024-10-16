@@ -2,6 +2,8 @@
 # License: BSD-3-Clause
 
 
+import sys
+
 from musicbox.core import dev
 from .application import create, instance
 
@@ -52,9 +54,13 @@ def main():
     args = parser.parse_args()
 
     if args.test:
+        success = True
         if args.test == 'no-gui' or args.test == 'all':
-            dev.run_tests(gui=False)
+            success &= dev.run_tests(gui=False)
         if args.test == 'gui' or args.test == 'all':
-            dev.run_tests(gui=True)
+            success &= dev.run_tests(gui=True)
+        exit_code = 0 if success else 1
     else:
-        run(gui=args.gui, developer_mode=args.dev)
+        exit_code = run(gui=args.gui, developer_mode=args.dev)
+
+    sys.exit(exit_code)
