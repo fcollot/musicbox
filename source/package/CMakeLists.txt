@@ -13,7 +13,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup.py"
     "${CMAKE_CURRENT_BINARY_DIR}/setup.py"
     @ONLY)
 
-if(MBOX_SYMLINK_SOURCE_PACKAGE)
+if(UNIX OR MBOX_SYMLINK_SOURCE_PACKAGE)
     set(link_command create_symlink)
 else()
     set(link_command copy_directory)
@@ -21,6 +21,7 @@ endif()
 
 add_custom_target(mbox_package ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${MBOX_PACKAGE_ROOT}/musicbox"
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${MBOX_PACKAGE_ROOT}/musicbox/musicbox"
     COMMAND ${CMAKE_COMMAND} -E ${link_command} "${CMAKE_CURRENT_SOURCE_DIR}/musicbox" "${MBOX_PACKAGE_ROOT}/musicbox/musicbox"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/setup.py" "${MBOX_PACKAGE_ROOT}/musicbox/"
     SOURCES ${sources}
