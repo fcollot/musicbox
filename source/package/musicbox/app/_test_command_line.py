@@ -25,68 +25,90 @@ class TestCommandLine(unittest.TestCase):
 
     def setUp(self):
         self._previous_argv = sys.argv
-        app.run = self._function_call_tracker('run_app')
+        self._args = {}
+        self._kwargs = {}
+        app.run = self._function_call_tracker('run')
         app.dev.run_tests = self._function_call_tracker('run_tests')
-        app.dev.set_auto_reload = self._function_call_tracker('set_auto_reload')
-        self._function_calls = []
+
+    def _function_call_tracker(self, name):
+        def _track_function_call(*args, **kwargs):
+            if name in self._args:
+                self._args[name].append(args)
+            else:
+                self._args[name] = [args]
+            if name in self._kwargs:
+                self._kwargs[name].append(kwargs)
+            else:
+                self._kwargs[name] = [kwargs]
+        return _track_function_call
 
     def tearDown(self):
         sys.argv = self._previous_argv
 
     def test_non_gui_tests_option(self):
-        self._ensure_options_trigger_function_call(['--test', 'no-gui'], 'run_tests', [[{'gui': False}]])
+        sys.argv = ['', '--test', 'no-gui']
+        app.main()
+        self.assertIn('run_tests', self._kwargs)
+        kwargs = self._kwargs['run_tests']
+        self.assertEqual(len(kwargs), 1)
+        self.assertIn('gui', kwargs[0])
+        self.assertFalse(kwargs[0]['gui'])
 
     def test_gui_tests_option(self):
-        self._ensure_options_trigger_function_call(['--test', 'gui'], 'run_tests', [[{'gui': True}]])
+        sys.argv = ['', '--test', 'gui']
+        app.main()
+        self.assertIn('run_tests', self._kwargs)
+        kwargs = self._kwargs['run_tests']
+        self.assertEqual(len(kwargs), 1)
+        self.assertIn('gui', kwargs[0])
+        self.assertTrue(kwargs[0]['gui'])
 
     def test_all_tests_option(self):
-        self._ensure_options_trigger_function_call(['--test', 'all'], 'run_tests', [[{'gui': True}], [{'gui': False}]])
+        sys.argv = ['', '--test', 'all']
+        app.main()
+        self.assertIn('run_tests', self._kwargs)
+        kwargs = self._kwargs['run_tests']
+        self.assertEqual(len(kwargs), 2)
+        self.assertIn('gui', kwargs[0])
+        self.assertIn('gui', kwargs[1])
+        self.assertNotEqual(kwargs[0]['gui'], kwargs[1]['gui'])
 
     def test_gui_option(self):
         sys.argv = ['', '--gui']
-        self._ensure_options_trigger_function_call(['--gui'], 'run_app', [[{'gui': True}]])
+        app.main()
+        self.assertIn('run', self._kwargs)
+        kwargs = self._kwargs['run']
+        self.assertIn('gui', kwargs[0])
+        self.assertTrue(kwargs[0]['gui'])
 
     def test_no_gui_option(self):
-        self._ensure_options_trigger_function_call(['--no-gui'], 'run_app', [[{'gui': False}]])
+        sys.argv = ['', '--no-gui']
+        app.main()
+        self.assertIn('run', self._kwargs)
+        kwargs = self._kwargs['run']
+        self.assertIn('gui', kwargs[0])
+        self.assertFalse(kwargs[0]['gui'])
 
     def test_gui_option_is_default(self):
-        self._ensure_options_trigger_function_call([], 'run_app', [[{'gui': True}]])
-
-    def test_dev_option_triggers_auto_reload(self):
-        self._ensure_options_trigger_function_call(['--dev'], 'set_auto_reload', [[True]])
-
-    def test_auto_reload_is_off_by_default(self):
         sys.argv = ['']
         app.main()
-        self.assertFalse(app.dev.auto_reload())
+        self.assertIn('run', self._kwargs)
+        kwargs = self._kwargs['run']
+        self.assertIn('gui', kwargs[0])
+        self.assertTrue(kwargs[0]['gui'])
 
-    def _function_call_tracker(self, name):
-        def _track_function_call(*args, **kwargs):
-            all_args = [*args]
-            if kwargs:
-                all_args.append(kwargs)
-            self._function_calls.append([name, all_args])
-
-        return _track_function_call
-
-    def _ensure_options_trigger_function_call(self, cl_options, function_name, expected_args_list):
-        sys.argv = ['', *cl_options]
+    def test_dev_option(self):
+        sys.argv = ['', '--dev']
         app.main()
-        args_list = []
+        self.assertIn('run', self._kwargs)
+        kwargs = self._kwargs['run']
+        self.assertIn('developer_mode', kwargs[0])
+        self.assertTrue(kwargs[0]['developer_mode'])
 
-        for function_call in self._function_calls:
-            name, args = function_call
-            if name == function_name:
-                args_list.append(args)
-
-        if not args:
-            raise AssertionError(f'The function {function_name} was not called.')
-
-        for expected_args in expected_args_list:
-            try:
-                args_list.remove(expected_args)
-            except:
-                raise AssertionError(f'Expected {function_name} to be called with arguments {expected_args_list}.')
-
-        if args_list:
-            raise AssertionsError(f'Unexpected call(s) to {function_name} with argument(s) {args_list}.')
+    def test_dev_option_is_off_by_default(self):
+        sys.argv = ['']
+        app.main()
+        self.assertIn('run', self._kwargs)
+        kwargs = self._kwargs['run']
+        self.assertIn('developer_mode', kwargs[0])
+        self.assertFalse(kwargs[0]['developer_mode'])
