@@ -46,6 +46,6 @@ def pyside_version():
                 if pyside2_spec is not None:
                     pyside_version = 2
                 else:
-                    raise ModuleNotFoundError("This packages requires PySide 2 or 6 (perferably 6).")
+                    raise ModuleNotFoundError("This packages requires PySide 2 or 6 (preferably 6).")
 
         return _pyside_version
