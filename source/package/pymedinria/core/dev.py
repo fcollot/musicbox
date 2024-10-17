@@ -13,7 +13,7 @@ import time
 import traceback
 import unittest
 
-import musicbox
+import pymedinria
 from . import config
 
 if config.pyside_version() == 2:
@@ -81,7 +81,7 @@ def set_auto_reload(enable, *, frequency=2):
             global _import_times
             current_time = time.time()
             for name, module in sys.modules.items():
-                if name.startswith('musicbox') and name not in _import_times:
+                if name.startswith('pymedinria') and name not in _import_times:
                     _import_times[name] = current_time
 
             _run_auto_reload_loop(frequency=frequency)
@@ -113,7 +113,7 @@ def _import_and_track_time(name, globals=None, locals=None, fromlist=(), level=0
 
     name_parts += name.split('.')
 
-    if name_parts[0] == 'musicbox':
+    if name_parts[0] == 'pymedinria':
         global _import_times
         current_time = time.time()
 
@@ -261,13 +261,13 @@ def find_test_modules(gui):
         - '_gui_test_' for GUI tests (which require a running QApplication).
 
     """
-    musicbox_root = musicbox.__path__[0]
+    pymedinria_root = pymedinria.__path__[0]
     module_prefix = f'_{"gui_" if gui else ""}test_'
-    test_module_paths = list(Path(musicbox_root).glob(f'**/{module_prefix}*.py'))
+    test_module_paths = list(Path(pymedinria_root).glob(f'**/{module_prefix}*.py'))
     modules = []
     
     for module_path in test_module_paths:
-        relative_path = module_path.relative_to(Path(musicbox_root).parent)
+        relative_path = module_path.relative_to(Path(pymedinria_root).parent)
         module_file = relative_path.parts[-1]
         full_module_name = '.'.join(relative_path.parts)[:-3]
         if module_file.startswith(module_prefix):

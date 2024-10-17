@@ -4,8 +4,8 @@
 
 from threading import Lock, Thread
 
-import musicbox
-from musicbox.core import config, console
+import pymedinria
+from pymedinria.core import config, console
 
 if config.pyside_version() == 2:
     from PySide2.QtCore import QCoreApplication
@@ -50,17 +50,17 @@ def _create_application_class(base_class):
 
         def __init__(self, argv=None):
             super().__init__(argv=argv)
-            self.setApplicationName("MusicBox")
+            self.setApplicationName("pyMedInria")
 
         def run(self):
             exit_value = 1
 
             with self._lock:
                 if self._is_running:
-                    raise RuntimeError("MusicBox is already running.")
+                    raise RuntimeError(f'{config.application_name()}is already running.')
                 self._is_running = True
 
-            console_locals = {'musicbox' : musicbox, 'mb' : musicbox}
+            console_locals = {'pymedinria' : pymedinria, 'mb' : pymedinria}
 
             with console.open(locals=console_locals, show_welcome=False, exit_function=self.quit):
                 if base_class.__name__ == 'QApplication':
@@ -81,7 +81,7 @@ def _create_application_class(base_class):
                 return self.exec()
 
         def _init_console_widget(self):
-            from musicbox.gui.console_widget import ConsoleWidget
+            from pymedinria.gui.console_widget import ConsoleWidget
 
             self._console_widget = ConsoleWidget()
             self._console_widget.show()

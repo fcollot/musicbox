@@ -6,11 +6,11 @@ from distutils.core import setup
 from setuptools import find_packages
 
 
-setup(name='musicbox',
+setup(name='pymedinria',
       version='@PROJECT_VERSION@',
-      packages=find_packages(include=['musicbox', 'musicbox.*']),
+      packages=find_packages(include=['pymedinria', 'pymedinria.*']),
       install_requires=[
-      '@MBOX_PYSIDE_PACKAGE@',
+      '@MED_PYSIDE_PACKAGE@',
       'numpy',
       'SimpleITK',
       'vtk',

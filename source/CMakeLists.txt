@@ -3,6 +3,6 @@
 
 add_subdirectory(package)
 
-if(MBOX_STANDALONE)
+if(MED_STANDALONE)
     add_subdirectory(standalone)
 endif()

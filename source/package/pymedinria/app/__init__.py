@@ -4,12 +4,12 @@
 
 import sys
 
-from musicbox.core import dev
+from pymedinria.core import config, dev
 from .application import create, instance
 
 
 def run(*, gui=True, developer_mode=False):
-    """Run MusicBox.
+    """Run the application.
 
     Use the 'gui' option to run in GUI or console-only mode.
 
@@ -23,7 +23,7 @@ def run(*, gui=True, developer_mode=False):
     if app is None:
         app = create(gui=gui)
     else:
-        raise RuntimeError("Cannot run MusicBox because another Qt application is already running.")
+        raise RuntimeError(f'Cannot run {config.application_name()} because another Qt application is already running.')
 
     if developer_mode:
         dev.set_developer_info(True)

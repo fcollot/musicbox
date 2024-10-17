@@ -6,7 +6,7 @@ import importlib
 import sys
 import unittest
 
-from musicbox import app
+from pymedinria import app
 
 
 class TestCommandLine(unittest.TestCase):
