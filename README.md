@@ -1,6 +1,6 @@
 *Copyright (c) 2024 IHU Liryc, Université de Bordeaux, Inria.*
 
-# MusicBox
+# pyMedInria
 
 A platform to develop ITK and VTK tools in Python for medInria and associated projects.
 
@@ -54,14 +54,14 @@ cmake [<options>] <path-to-source-directory>
 cmake --build .
 ```
 
-The Python dstribution packages will be located at `<build_directory>/<build_type>/packages/musicbox/dist`
+The Python dstribution packages will be located at `<build_directory>/<build_type>/packages/pymedinria/dist`
 (When not using a multi-config generator the default build type is `Release`)
 
-To install a virtual environment in the build tree, set the `MBOX_VIRTUAL_ENV` cmake option to `TRUE`.
+To install a virtual environment in the build tree, set the `MED_VIRTUAL_ENV` cmake option to `TRUE`.
 
 #### Building the standalone:
 
-Follow the steps to build the Python package, but set the `MBOX_STANDALONE` cmake option to `TRUE`.
+Follow the steps to build the Python package, but set the `MED_STANDALONE` cmake option to `TRUE`.
 
 (*The standalone is not yet available*)
 
@@ -73,17 +73,17 @@ Follow the steps to build the Python package, but set the `MBOX_STANDALONE` cmak
 
 * Using the virtual environment:
 
-`<build_directory>/<build_type>/venv/bin/python -m musicbox --test all`\
+`<build_directory>/<build_type>/venv/bin/python -m pymedinria --test all`\
 (on Windows the path is `<build_directory>/<build_type>/venv/Scripts/python.exe`)
 
 * Using the standalone (*not yet available*):
 
-`./musicbox --test all`
+`./pymedinria --test all`
 
 * From Python:
 
 ```
-from musicbox import dev
+from pymedinria import dev
 dev.run_tests()
 ```
 
@@ -97,17 +97,17 @@ cmake --build --target mbox_run_application
 
 * Using the virtual environment:
 
-`<build_directory>/<build_type>/venv/bin/python -m musicbox`
+`<build_directory>/<build_type>/venv/bin/python -m pymedinria`
 (on Windows the path is `<build_directory>/<build_type>/venv/Scripts/python.exe`)
 
 * Using the standalone (*not yet available*):
 
-`./musicbox`
+`./pymedinria`
 
 * From Python:
 
 ```
-from musicbox import app
+from pymedinria import app
 app.run()
 ```
 
@@ -117,7 +117,7 @@ app.run()
 #### Python package:
 
 Install one of the distribution packages using pip.
-They are located at `<build_directory>/<build_type>/packages/musicbox/dist`.
+They are located at `<build_directory>/<build_type>/packages/pymedinria/dist`.
 
 #### Standalone:
 
