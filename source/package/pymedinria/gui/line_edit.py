@@ -2,7 +2,7 @@
 # License: BSD-3-Clause
 
 
-from musicbox.core import config
+from pymedinria.core import config
 
 if config.pyside_version() == 2:
     from PySide2.QtCore import QEvent, QObject, Qt, Signal, Slot

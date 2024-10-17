@@ -2,6 +2,7 @@
 # License: BSD-3-Clause
 
 
+import importlib.metadata
 import importlib.util
 from threading import Lock
 
@@ -10,8 +11,22 @@ _pyside_version = None
 _lock = Lock()
 
 
+def application_name():
+    """The display name of the application.
+
+    This is the name displayed to the user, which may differ from the package or
+    project name.
+    """
+
+    return "pyMedInria"
+
+
+def application_version():
+    return importlib.metadata.version('pymedinria')
+
+
 def pyside_version():
-    """Return the PySide version to use in the application.
+    """The PySide version to use in the application.
 
     Use this function to choose which PySide modules to import.
 
@@ -31,6 +46,6 @@ def pyside_version():
                 if pyside2_spec is not None:
                     pyside_version = 2
                 else:
-                    raise ModuleNotFoundError("PySide 2 or 6 is required")
+                    raise ModuleNotFoundError("This packages requires PySide 2 or 6 (perferably 6).")
 
         return _pyside_version

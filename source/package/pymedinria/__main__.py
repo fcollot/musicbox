@@ -2,4 +2,7 @@
 # License: BSD-3-Clause
 
 
-from musicbox.app import run
+from pymedinria.app import main
+
+
+main()

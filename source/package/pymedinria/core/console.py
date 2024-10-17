@@ -4,9 +4,10 @@
 
 import code
 from contextlib import contextmanager
-from importlib.metadata import version
 import sys
 from threading import Lock
+
+from . import config
 
 
 _instance = None
@@ -55,7 +56,7 @@ class _Console():
     cause issues outside the standard command line environment.
     """
 
-    welcome_text = f'Python {sys.version} on {sys.platform}\n\nMusicBox {version("musicbox")}\n'
+    welcome_text = f'Python {sys.version} on {sys.platform}\n\n{config.application_name()} {config.application_version()}\n'
     
     def __init__(self, *, locals={}, show_welcome=True, exit_function=sys.exit):
         """

@@ -5,7 +5,7 @@
 from rlcompleter import Completer
 import sys
 
-from musicbox.core import config, console
+from pymedinria.core import config, console
 from .line_edit import LineEdit
 
 if config.pyside_version() == 2:
@@ -25,7 +25,7 @@ class ConsoleWidget(QWidget):
 
     """
 
-    def __init__(self, parent=None, *, size=(800, 600), title="MusicBox Python console", locals={}):
+    def __init__(self, parent=None, *, size=(800, 600), title=f'{config.application_name()} Python console', locals={}):
         super().__init__(parent)
         self._init_window(size, title)
         self._init_output_widget()

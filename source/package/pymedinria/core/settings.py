@@ -19,7 +19,7 @@ class Settings():
     """
 
     def __init__(self):
-        self._settings = QSettings('liryc', 'musicbox')
+        self._settings = QSettings('liryc', 'pymedinria')
 
     def value(self, name, default_value=None):
         return self._settings.value(name, default_value)

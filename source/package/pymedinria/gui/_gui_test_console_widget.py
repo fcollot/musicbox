@@ -5,8 +5,8 @@
 import sys
 import unittest
 
-from musicbox import app
-from musicbox.core import console
+from pymedinria import app
+from pymedinria.core import console
 from .console_widget import ConsoleWidget
 
 
