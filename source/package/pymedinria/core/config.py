@@ -49,3 +49,18 @@ def pyside_version():
                     raise ModuleNotFoundError("This packages requires PySide 2 or 6 (preferably 6).")
 
         return _pyside_version
+
+
+def gui_enabled():
+    """Check if GUI functionality is enabled.
+
+    Calling this function before the application is created will always return False.
+    """
+
+    if pyside_version() == 2:
+        from PySide2.QtCore import QCoreApplication
+    else:
+        from PySide6.QtCore import QCoreApplication
+
+    app = QCoreApplication.instance()
+    return app and app.gui_enabled()

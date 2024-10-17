@@ -2,95 +2,40 @@
 # License: BSD-3-Clause
 
 
+import builtins
 import code
-from contextlib import contextmanager
 import sys
-from threading import Lock
+import threading
 
 from . import config
 
-
-_instance = None
-_lock = Lock()
-
-
-@contextmanager
-def open(*args, **kwargs):
-    """Context manager for the console.
-
-    To be used as follows:
-
-        with console.open(arguments):
-            (code to execute)
-
-   The arguments will be forwared to the console constructor.
-    Only one console can be open at any time.
-
-    """
-    global _instance
-
-    with _lock:
-        if _instance:
-            raise RuntimeError("The console is already open.")
-        _instance = _Console(*args, **kwargs)
-
-    try:
-        yield _instance
-    finally:
-        with _lock:
-            _instance.close()
-            _instance = None
+if config.pyside_version() == 2:
+    from PySide2.QtCore import Object, Slot, Signal
+else:
+    from PySide6.QtCore import QObject, Slot, Signal
 
 
-def instance():
-    with _lock:
-        return _instance
-
-
-class _Console():
+class Console(QObject):
     """Interactive console for the Python intepreter.
 
-    This class is a wrapper over the code module's InteractoveConsole class. It
+    This class is a wrapper over the code module's InteractiveConsole class. It
     adds a prompt, a custom welcome message and a history of previously pushed
-    expressions, and it also modifies some of the builtin functions that can
-    cause issues outside the standard command line environment.
+    expressions, and it modifies some of the builtin functions that can cause
+    issues outside the terminal command line environment.
     """
 
-    welcome_text = f'Python {sys.version} on {sys.platform}\n\n{config.application_name()} {config.application_version()}\n'
-    
-    def __init__(self, *, locals={}, show_welcome=True, exit_function=sys.exit):
-        """
-        The 'locals' option will cause the associated dict to be merged into the
-        __main__ dict, allowing the symbols to be accessible within the console.
+    WELCOME_TEXT = f'Python {sys.version} on {sys.platform}\n{config.application_name()} {config.application_version()}\n'
 
-        A custom exit funtion can be specified. It will replace the builtin 'exit'
-        and 'quit' functions.
+    run_ended = Signal(Exception)
 
-        """
-        try:
-            self._init_internal_console(locals)
-            self._init_builtins(exit_function)
-            self._init_prompt()
-            self._init_history()
-            if show_welcome:
-                self.show_welcome()
-        except:
-            self.close()
-            raise
+    _running_instance = None
 
-    def _init_internal_console(self, locals):
-        main_scope = vars(sys.modules['__main__'])
-        main_scope.update(locals)
-        self._console = code.InteractiveConsole(locals=main_scope)
-
-    def _init_builtins(self, exit_function):
-        builtins_dict = vars(sys.modules['builtins'])
-        self._builtins_dict_copy = builtins_dict.copy()
-        help_function = builtins_dict['help']
-        builtins_dict['help'] = lambda subject : help_function(subject)
-        builtins_dict['exit'] = exit_function
-        builtins_dict['quit'] = exit_function
-        del builtins_dict['license']
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._lock = threading.RLock()
+        self._thread = None
+        self._init_prompt()
+        self._init_history()
 
     def _init_prompt(self):
         try:
@@ -107,15 +52,88 @@ class _Console():
         self._history = [""]
         self._history_index = 0
 
-    def show_welcome(self):
-        print(self.welcome_text)
+    def is_running(self):
+        return self._running_instance is self
 
-    def close(self):
-        self._restore_builtins()
+    def run(self, *, globals={}, command_line_thread=None):
+        """Run the console.
 
-    def _restore_builtins(self):
-        vars(sys.modules['builtins']).update(self._builtins_dict_copy)
+        The 'globals' dict, if provided, will be merged into the __main__ dict,
+        allowing the symbols it contains to be accessible within the console.
 
+        The 'command_line_thread' should be the thread from which the console
+        instance will be used. If not given, a default thread will be created
+        using the builtin 'input' function to read commands (this is suitable
+        when running in non-GUI mode only).
+
+        Only one console may be running at a given time.
+
+        """
+        with self._lock:
+            cls = type(self)
+            if cls._running_instance:
+                raise RuntimeError("A console is already running.")
+            cls._running_instance = self
+
+            self._command_line_thread = command_line_thread
+            self._setup_internal_console(globals)
+            self._setup_printing()
+
+            sys.stdout.write(f'{self.WELCOME_TEXT}')
+
+            if not self._command_line_thread:
+                self._run_command_line_thread()
+
+    def _setup_internal_console(self, globals):
+        main_scope = vars(sys.modules['__main__'])
+        main_scope.update(globals)
+        self._console = code.InteractiveConsole(locals=main_scope)
+
+    def _setup_printing(self):
+        if not hasattr(builtins, '_print'):
+            builtins._print = print
+        builtins.print = self.print
+
+    def _run_command_line_thread(self):
+        self._command_line_thread = threading.Thread(
+            target=self._command_line_loop,
+            name="Console command line"
+        )
+        self._command_line_thread.start()
+
+    def _command_line_loop(self):
+        try:
+            while True:
+                line = input(self.prompt())
+                self.push(line)
+        except Exception as e:
+            self.end_run(exception=e)
+        except SystemExit:
+            self.end_run()
+
+    def end_run(self, *, exception=None):
+        """Stop a running console.
+        """
+        with self._lock:
+            self._console = None
+            builtins.print = builtins._print
+            type(self)._running_instance = None
+            self._command_line_thread = None
+            self.run_ended.emit(exception)
+
+    @Slot(str)
+    def print(self, object='', sep='', end='\n', file=None, flush=False):
+        """Custom print function for running console.
+
+        """
+        with self._lock:
+            thread = threading.current_thread()
+            if thread is not self._command_line_thread:
+                object = f'\n{object}{end}{self.prompt()}'
+                end = ''
+            builtins._print(object, sep=sep, end=end, file=file or sys.stdout, flush=flush)
+
+    @Slot(str)
     def push(self, line):
         """Push a line of text to the console.
 
@@ -123,28 +141,28 @@ class _Console():
         evaluated by the interpreter within the __main__ context.
 
         """
-        self._history_index = len(self._history) - 1
-        self._history[self._history_index] = line
+        with self._lock:
+            self._history_index = len(self._history) - 1
+            self._history[self._history_index] = line
 
-        if line.strip():
-            self._history.append("")
-            self._history_index += 1
+            if line.strip():
+                self._history.append("")
+                self._history_index += 1
 
-        try:
             more = self._console.push(line)
-        except SystemExit:
-            self.close()
-            return
 
-        if more:
-            self._prompt = self._ps2
-        else:
-            self._prompt = self._ps1
+            if more:
+                self._prompt = self._ps2
+            else:
+                self._prompt = self._ps1
 
-    def reset(self):
+    @Slot()
+    def reset_input(self):
         """Reset the current stack of lines.
+
         """
-        self._console.resetbuffer()
+        with self._lock:
+            self._console.resetbuffer()
 
     def prompt(self):
         """The current prompt.
@@ -153,13 +171,19 @@ class _Console():
         multiline expression (after the first line) is '...'.
 
         """
-        return self._prompt
+        with self._lock:
+            return self._prompt
 
     def current_history_entry(self):
-        return self._history[self._history_index]
-    
-    def move_up_history(self):
-        self._history_index = max(self._history_index - 1, 0)
+        with self._lock:
+            return self._history[self._history_index]
 
+    @Slot()
+    def move_up_history(self):
+        with self._lock:
+            self._history_index = max(self._history_index - 1, 0)
+
+    @Slot()
     def move_down_history(self):
-        self._history_index = min(self._history_index + 1, len(self._history) - 1)
+        with self._lock:
+            self._history_index = min(self._history_index + 1, len(self._history) - 1)

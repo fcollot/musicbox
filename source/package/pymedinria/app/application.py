@@ -3,6 +3,7 @@
 
 
 from threading import Lock, Thread
+from traceback import print_exception
 
 import pymedinria
 from pymedinria.core import config, console
@@ -52,6 +53,12 @@ def _create_application_class(base_class):
             super().__init__(argv=argv)
             self.setApplicationName("pyMedInria")
 
+        def gui_enabled(self):
+            """Check if GUI functionality is enabled.
+
+            """
+            return type(self).__base__ is not QCoreApplication
+
         def run(self):
             exit_value = 1
 
@@ -60,14 +67,9 @@ def _create_application_class(base_class):
                     raise RuntimeError(f'{config.application_name()}is already running.')
                 self._is_running = True
 
-            console_locals = {'pymedinria' : pymedinria, 'mb' : pymedinria}
+            self._run_console()
 
-            with console.open(locals=console_locals, show_welcome=False, exit_function=self.quit):
-                if base_class.__name__ == 'QApplication':
-                    self._init_console_widget()
-                else:
-                    self._init_console_command_line()
-                exit_value = self._run_qt()
+            exit_value = self._run_qt()
 
             with self._lock:
                 self._is_running = False
@@ -75,36 +77,40 @@ def _create_application_class(base_class):
             return exit_value
 
         def _run_qt(self):
+            self.aboutToQuit.connect(self.deleteLater)
+
             if config.pyside_version() == 2:
                 return self._exec()
             else:
                 return self.exec()
 
-        def _init_console_widget(self):
-            from pymedinria.gui.console_widget import ConsoleWidget
-
-            self._console_widget = ConsoleWidget()
-            self._console_widget.show()
-            self.aboutToQuit.connect(lambda : self._console_widget.update_output_streams(False))
-
-        def _init_console_command_line(self):
-            """Run the console command line on a separate thread.
-
-            The command line cannot use the main thread as that one is occupied by
-            the Qt event loop (which must be in the main thread).
+        def _run_console(self):
+            """Run the console.
+            
+            Creates and runs a ConsoleWidget if the GUI is enabled, or a simple
+            terminal console if not.
 
             """
-            def command_line():
-                try:
-                    console.instance().show_welcome()
+            if self.gui_enabled():
+                from pymedinria.gui.console_widget import ConsoleWidget as Console
+            else:
+                from pymedinria.core.console import Console
 
-                    while True:
-                        line = input(console.instance().prompt())
-                        console.instance().push(line)
-                except Exception as e:
-                    print(e)
+            console_globals = {'pymedinria' : pymedinria, 'med' : pymedinria}
+            console = Console()
+            console.run_ended.connect(self._exit_from_console)
+            console.run(globals=console_globals)
 
-            thread = Thread(target=command_line, name="Console command line", daemon=True)
-            thread.start()
+            if self.gui_enabled():
+                console.show()
+
+        def _exit_from_console(self, exception):
+            if exception:
+                print_exception(exception)
+            error_code = 0 if not exception else 1
+            self.exit(error_code)
+
+        def console_widget(self):
+            return self._console_widget
 
     return Application

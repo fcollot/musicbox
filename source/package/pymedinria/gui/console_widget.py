@@ -2,39 +2,38 @@
 # License: BSD-3-Clause
 
 
-from rlcompleter import Completer
 import sys
+import threading
 
-from pymedinria.core import config, console
+from pymedinria.core import completer, config, console
 from .line_edit import LineEdit
 
 if config.pyside_version() == 2:
-    from PySide2.QtCore import Qt, Signal, Slot
+    from PySide2.QtCore import QCoreApplication, QEventLoop, Qt, Signal, Slot
     from PySide2.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 else:
-    from PySide6.QtCore import Qt, Signal, Slot
+    from PySide6.QtCore import QCoreApplication, QEventLoop, Qt, Signal, Slot
     from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 
 class ConsoleWidget(QWidget):
     """Widget to display console input and output.
 
-    (The console must be created before this widget)
-    In addition to providing a GUI for the console, this widget adds code
-    completion using the tab key.
+    In addition to the base console, this widget adds code completion using the
+    tab key.
 
     """
 
-    def __init__(self, parent=None, *, size=(800, 600), title=f'{config.application_name()} Python console', locals={}):
+    run_ended = Signal(Exception)
+
+    def __init__(self, parent=None, *, size=(800, 600), title=f'{config.application_name()} Python console'):
         super().__init__(parent)
         self._init_window(size, title)
         self._init_output_widget()
+        self._init_console()
         self._init_input_widget()
         self._init_fonts()
         self._init_code_completion()
-        self.destroyed.connect(lambda : self.update_output_streams(False))
-        self.update_output_streams(True)
-        console.instance().show_welcome()
   
     def _init_window(self, size, title):
         self.setWindowTitle(title)
@@ -56,18 +55,19 @@ class ConsoleWidget(QWidget):
         scroll_bar.rangeChanged.connect(lambda _, max : scroll_bar.setValue(max))
         self.layout().addWidget(self._scroll_area)
 
+    def _init_console(self):
+        self._console = console.Console()
+
     def _init_input_widget(self):
         self._input_widget = LineEdit()
         self.layout().addWidget(self._input_widget)
         self.setFocusProxy(self._input_widget)
         self._update_input_widget()
         self._input_widget.line.connect(self._handle_input)
-        self._input_widget.up.connect(console.instance().move_up_history)
+        self._input_widget.up.connect(self._console.move_up_history)
         self._input_widget.up.connect(self._update_input_widget)
-        self._input_widget.down.connect(console.instance().move_down_history)
+        self._input_widget.down.connect(self._console.move_down_history)
         self._input_widget.down.connect(self._update_input_widget)
-        self._input_widget.cursorPositionChanged.connect(self._ensure_cursor_after_prompt)
-        self._input_widget.tab.connect(self._complete_input)
 
     def _init_fonts(self):
         font = self._output_widget.font()
@@ -77,31 +77,52 @@ class ConsoleWidget(QWidget):
         self._input_widget.setFrame(False)
 
     def _init_code_completion(self):
-        self._completer = Completer()
+        self._completer = completer.Completer()
+        self._input_widget.tab.connect(self._completer.complete)
+        self._completer.possible_completions.connect(self._show_possible_completions)
+        self._completer.successful_completion.connect(self._input_widget.setText)
 
-    def update_output_streams(self, enable):
-        if enable:
-            self._stdout = sys.stdout
-            self._stderr = sys.stderr
-            sys.stdout = self
-            sys.stderr = _StreamWrapper((sys.stderr, self))
-        else:
-            sys.stdout = self._stdout
-            sys.stderr = self._stderr
+    def run(self, *, globals={}):
+        self._setup_output_streams()
+        self._console.run_ended.connect(self.run_ended)
+        self._console.run(command_line_thread=threading.main_thread())
+
+    def _setup_output_streams(self):
+        self._stdout = sys.stdout
+        self._stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = _StreamWrapper((sys.stderr, self))
+
+    def end_run(self, *, exception=None):
+        self._restore_output_streams()
+        self._console.end_run(exception=exception)
+
+    @Slot()
+    def _restore_output_streams(self):
+        sys.stdout = self._stdout
+        sys.stderr = self._stderr
   
     @Slot(str, str)
-    def _handle_input(self, prompt, text):
+    def _handle_input(self, text, prompt):
         print(f'{prompt}{text}')
-        console.instance().push(text)
+        self._output_widget.repaint()
+        self._input_widget.set_prompt()
+        self._input_widget.setText()
+        self._input_widget.repaint()
+        QCoreApplication.instance().processEvents(QEventLoop.ExcludeUserInputEvents)
+
+        try:
+            self._console.push(text)
+        except Exception as e:
+            self.end_run(exception=e)
+        except SystemExit:
+            self.end_run()
+
         self._update_input_widget()
 
     def _update_input_widget(self):
-        self._input_widget.set_prompt(console.instance().prompt())
-        self._input_widget.setText(console.instance().current_history_entry())
-
-    @Slot(int, int)
-    def _ensure_cursor_after_prompt(self, _, new_position):
-        self._input_widget.setCursorPosition(max(len(self._input_widget.prompt()), new_position))
+        self._input_widget.set_prompt(self._console.prompt())
+        self._input_widget.setText(self._console.current_history_entry())
 
     def write(self, text):
         self._output_widget.setText(f'{self._output_widget.text()}{text}')
@@ -112,30 +133,12 @@ class ConsoleWidget(QWidget):
     def showEvent(self, event):
         self.setFocus()
 
-    @Slot(str)
-    def _complete_input(self, text):
-        completions = self._completions(text)
-        if completions:
-            if len(completions) == 1:
-                self._input_widget.setText(completions[0])
-            else:
-                print(f'{self._input_widget.prompt()}{self._input_widget.text()}')
-                for i in range(len(completions)):
-                    sys.stdout.write(f'{completions[i]}\t\t')
-                print()
-
-    def _completions(self, text):
-        state = 0
-        completions = []
-        completer = Completer()
-        while True:
-            completion = completer.complete(text, state)
-            state += 1
-            if completion:
-                completions.append(completion)
-            else:
-                break
-        return completions
+    @Slot(list)
+    def _show_possible_completions(self, completions):
+        print(f'{self._input_widget.prompt()}{self._input_widget.text()}')
+        for i in range(len(completions)):
+            sys.stdout.write(f'{completions[i]}\t\t')
+        sys.stdout.write('\n')
 
 
 class _StreamWrapper():
